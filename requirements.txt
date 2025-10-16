@@ -1,9 +1,20 @@
+# --- Core dependencies ---
 streamlit==1.29.0
 pandas==2.1.1
+python-dateutil==2.9.2
+openpyxl==3.1.2
+
+# --- Database ---
+sqlite-utils==3.36
+
+# --- Geolocalizzazione e mappe ---
 geopy==2.3.0
 folium==0.14.0
 streamlit-folium==0.10.0
-streamlit-pdf-viewer==0.2.0
+
+# --- PDF e Report ---
 reportlab==4.1.0
-openpyxl==3.1.2
-python-dateutil==2.9.2
+streamlit-pdf-viewer==0.2.0
+
+# --- Utility ---
+requests==2.31.0

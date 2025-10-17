@@ -73,7 +73,7 @@ def backup_to_github():
                 data = f.read()
 
             blob = repo.create_git_blob(base64.b64encode(data).decode(), "base64")
-            elements.append(github.InputGitTreeElement(db_file, "100644", "blob", blob.sha))
+            elements.append(Github.InputGitTreeElement(db_file, "100644", "blob", blob.sha))
 
         if not elements:
             st.warning("⚠️ Nessun file da salvare su GitHub.")
@@ -2267,6 +2267,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

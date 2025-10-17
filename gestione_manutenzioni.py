@@ -25,6 +25,7 @@ from io import BytesIO
 import requests
 import base64
 from github import Github, GithubException
+import tempfile
 
 # --- CONFIGURAZIONE E COSTANTI ---
 st.set_page_config(
@@ -47,94 +48,69 @@ def get_github_repo():
     return repo, branch
 
 
+# === BACKUP ===
 def backup_to_github():
-    github_token = st.secrets["github"]["token"]
-    repo = st.secrets["github"]["repo"]
-    branch = st.secrets["github"]["branch"]
-
-    headers = {"Authorization": f"token {github_token}"}
-    db_files = ["login_log.db", "manutenzioni.db"]
-    uploaded = []
-
-    for db_file in db_files:
-        if not os.path.exists(db_file):
-            st.warning(f"⚠️ File {db_file} non trovato in locale, salto il backup.")
-            continue
-
-        with open(db_file, "rb") as f:
-            content = base64.b64encode(f.read()).decode("utf-8")  # ✅ Encode corretto
-
-        # Controlla se il file già esiste per ottenere lo sha
-        url = f"https://api.github.com/repos/{repo}/contents/{db_file}"
-        r = requests.get(url, headers=headers)
-        sha = r.json().get("sha") if r.status_code == 200 else None
-
-        data = {
-            "message": f"Backup {db_file} da Streamlit",
-            "content": content,
-            "branch": branch
-        }
-        if sha:
-            data["sha"] = sha
-
-        r = requests.put(url, headers=headers, json=data)
-        if r.status_code in [200, 201]:
-            uploaded.append(db_file)
-        else:
-            st.error(f"❌ Errore nel salvataggio di {db_file}: {r.status_code} – {r.text}")
-
-    if uploaded:
-        st.success(f"✅ Backup completato su GitHub: {', '.join(uploaded)}")
-    else:
-        st.warning("⚠️ Nessun file salvato su GitHub.")
-
-
-# --- RIPRISTINO DA GITHUB ---
-import requests
-import base64
-import streamlit as st
-
-def restore_from_github():
-    """Ripristina i database (login_log.db e manutenzioni.db) dal repository GitHub."""
     try:
-        github = st.secrets["github"]
-        token = github["token"]
-        repo = github["repo"]
-        branch = github["branch"]
+        github_token = st.secrets["github"]["token"]
+        repo_name = st.secrets["github"]["repo"]
+        branch = st.secrets["github"]["branch"]
 
-        headers = {"Authorization": f"token {token}"}
+        g = Github(github_token)
+        repo = g.get_repo(repo_name)
+        ref = repo.get_git_ref(f"heads/{branch}")
+        sha_latest_commit = ref.object.sha
+        base_tree = repo.get_git_tree(sha_latest_commit)
+
+        db_files = ["login_log.db", "manutenzioni.db"]
+        elements = []
+
+        for db_file in db_files:
+            if not os.path.exists(db_file):
+                st.warning(f"⚠️ File {db_file} non trovato, saltato.")
+                continue
+
+            with open(db_file, "rb") as f:
+                data = f.read()
+
+            blob = repo.create_git_blob(base64.b64encode(data).decode(), "base64")
+            elements.append(github.InputGitTreeElement(db_file, "100644", "blob", blob.sha))
+
+        if not elements:
+            st.warning("⚠️ Nessun file da salvare su GitHub.")
+            return
+
+        new_tree = repo.create_git_tree(elements, base_tree)
+        parent = repo.get_git_commit(sha_latest_commit)
+        commit_message = "💾 Backup DB da Streamlit (via PyGitHub)"
+        new_commit = repo.create_git_commit(commit_message, new_tree, [parent])
+        ref.edit(new_commit.sha)
+        st.success(f"✅ Backup completato su GitHub: {', '.join(db_files)}")
+
+    except Exception as e:
+        st.error(f"❌ Errore durante il backup: {e}")
+
+# === RESTORE ===
+def restore_from_github():
+    try:
+        github_token = st.secrets["github"]["token"]
+        repo_name = st.secrets["github"]["repo"]
+        branch = st.secrets["github"]["branch"]
+
+        g = Github(github_token)
+        repo = g.get_repo(repo_name)
+
         db_files = ["login_log.db", "manutenzioni.db"]
         restored = []
 
-        for file_name in db_files:
-            url = f"https://api.github.com/repos/{repo}/contents/{file_name}?ref={branch}"
-            r = requests.get(url, headers=headers)
-
-            if r.status_code == 200:
-                data = r.json()
-                encoding = data.get("encoding")
-
-                # 🔹 Caso 1: file piccolo (GitHub restituisce base64 inline)
-                if encoding == "base64":
-                    content = base64.b64decode(data["content"])
-                    with open(file_name, "wb") as f:
-                        f.write(content)
-                    restored.append(file_name)
-
-                # 🔹 Caso 2: file grande → scarica da raw.githubusercontent
-                elif "download_url" in data:
-                    d = requests.get(data["download_url"])
-                    if d.status_code == 200:
-                        with open(file_name, "wb") as f:
-                            f.write(d.content)
-                        restored.append(file_name)
-                    else:
-                        st.warning(f"⚠️ Download fallito per {file_name} (status: {d.status_code})")
-                else:
-                    st.warning(f"⚠️ File {file_name} non trovato su GitHub (encoding: {encoding})")
-
-            else:
-                st.warning(f"⚠️ Errore GitHub {r.status_code} per {file_name}")
+        for db_file in db_files:
+            try:
+                contents = repo.get_contents(db_file, ref=branch)
+                data = base64.b64decode(contents.content)
+                with open(db_file, "wb") as f:
+                    f.write(data)
+                restored.append(db_file)
+            except Exception as inner_e:
+                st.warning(f"⚠️ File {db_file} non trovato su GitHub: {inner_e}")
 
         if restored:
             st.success(f"✅ Database ripristinati: {', '.join(restored)}")
@@ -142,7 +118,7 @@ def restore_from_github():
             st.warning("⚠️ Nessun database ripristinato da GitHub.")
 
     except Exception as e:
-        st.error(f"❌ Errore durante il ripristino da GitHub: {e}")
+        st.error(f"❌ Errore nel ripristino: {e}")
 
 ## FUNZIONI PER SALVATAGGIO E VISUALIZZAZIONE INFO BACKUP TO GITHUB  
 
@@ -2291,5 +2267,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 

@@ -151,6 +151,29 @@ def get_backup_timestamp():
             except Exception:
                 return None
     return None
+# VERIFICA SE CI SONO LE CREDENZIALI E SE IL REPO è VISTO CORRETTAMENTE SU GITHUB
+def test_github_connection():
+    try:
+        github_token = st.secrets["github"]["token"]
+        repo = st.secrets["github"]["repo"]
+        branch = st.secrets["github"]["branch"]
+
+        url = f"https://api.github.com/repos/{repo}/branches/{branch}"
+        headers = {"Authorization": f"token {github_token}"}
+
+        response = requests.get(url, headers=headers)
+
+        if response.status_code == 200:
+            st.success(f"✅ Connessione a GitHub OK. Branch '{branch}' trovato nel repo '{repo}'.")
+        elif response.status_code == 404:
+            st.error(f"⚠️ Branch '{branch}' o repository '{repo}' non trovato su GitHub (404).")
+        elif response.status_code == 401:
+            st.error("❌ Token GitHub non valido o senza permessi.")
+        else:
+            st.warning(f"⚠️ Risposta inattesa da GitHub: {response.status_code} - {response.text}")
+
+    except KeyError as e:
+        st.error(f"❌ Chiave mancante in st.secrets: {e}")
 
 # FUNZIONE INIZIALIZZAZIONE LOGIN
 
@@ -2128,6 +2151,7 @@ def main():
     init_db()
     init_login_log()
     check_login()
+    test_github_connection()
     
     
 
@@ -2218,4 +2242,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 

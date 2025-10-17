@@ -2180,7 +2180,7 @@ def show_impostazioni():
 # --- MAIN APPLICATION (CONTROLLER) ---
 
 def main():
-    restore_from_github()  # ✅ Prova il ripristino all'avvio
+    # restore_from_github()  # ✅ Prova il ripristino all'avvio
     init_db()
     init_login_log()
     check_login()
@@ -2275,5 +2275,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 

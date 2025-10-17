@@ -114,11 +114,17 @@ def restore_from_github():
 
         if restored:
             st.success(f"✅ Database ripristinati: {', '.join(restored)}")
+            # 👇 Forza il reload dei dati
+            st.cache_data.clear()
+            st.cache_resource.clear()
+            st.toast("🔄 Cache svuotata, database ricaricato.", icon="♻️")
+            st.rerun()
         else:
             st.info("⚠️ Nessun database ripristinato da GitHub.")
 
     except Exception as e:
         st.error(f"❌ Errore durante il ripristino: {e}")
+
 
 ## FUNZIONI PER SALVATAGGIO E VISUALIZZAZIONE INFO BACKUP TO GITHUB  
 
@@ -2267,6 +2273,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

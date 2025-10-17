@@ -24,7 +24,7 @@ import io
 from io import BytesIO
 import requests
 import base64
-from github import Github
+from github import Github, GithubException
 
 # --- CONFIGURAZIONE E COSTANTI ---
 st.set_page_config(
@@ -47,45 +47,86 @@ def get_github_repo():
     return repo, branch
 
 def backup_to_github():
-    repo, branch = get_github_repo()
-    files_to_upload = ["login_log.db", "manutenzioni.db"]
-    
-    for file_name in files_to_upload:
-        if os.path.exists(file_name):
-            with open(file_name, "rb") as f:
-                content = f.read()
-            try:
-                # Verifica se il file esiste già su GitHub
-                try:
-                    existing_file = repo.get_contents(file_name, ref=branch)
-                    repo.update_file(existing_file.path, f"Aggiornamento {file_name}", content, existing_file.sha, branch=branch)
-                    st.success(f"✅ {file_name} aggiornato su GitHub")
-                except:
-                    repo.create_file(file_name, f"Creazione {file_name}", content, branch=branch)
-                    st.success(f"✅ {file_name} creato su GitHub")
-            except Exception as e:
-                st.error(f"❌ Errore durante il backup di {file_name}: {e}")
-        else:
-            st.warning(f"⚠️ {file_name} non trovato localmente, impossibile caricarlo.")
+    """💾 Salva i DB su GitHub (login_log.db e manutenzioni.db)"""
+    try:
+        github_token = st.secrets["github"]["token"]
+        repo_name = st.secrets["github"]["repo"]
+        branch_name = st.secrets["github"]["branch"]
+    except KeyError:
+        st.error("❌ Chiavi GitHub mancanti in secrets.toml")
+        return
+
+    g = Github(github_token)
+    try:
+        repo = g.get_repo(repo_name)
+        branch = repo.get_branch(branch_name)
+    except GithubException as e:
+        st.error(f"❌ Errore repo/branch GitHub: {e}")
+        return
+
+    for file_name in ["login_log.db", "manutenzioni.db"]:
+        if not os.path.exists(file_name):
+            st.warning(f"⚠️ File {file_name} non trovato localmente, salto backup.")
+            continue
+
+        with open(file_name, "rb") as f:
+            content_bytes = f.read()
+        content_b64 = base64.b64encode(content_bytes).decode()
+
+        try:
+            # Prova a recuperare il file esistente
+            gh_file = repo.get_contents(file_name, ref=branch_name)
+            repo.update_file(
+                path=file_name,
+                message=f"Aggiornamento {file_name}",
+                content=content_b64,
+                sha=gh_file.sha,
+                branch=branch_name
+            )
+        except GithubException:
+            # Se non esiste, lo crea
+            repo.create_file(
+                path=file_name,
+                message=f"Creazione {file_name}",
+                content=content_b64,
+                branch=branch_name
+            )
+        st.success(f"✅ File {file_name} salvato su GitHub.")
 
 def restore_from_github():
-    repo, branch = get_github_repo()
-    files_to_restore = ["login_log.db", "manutenzioni.db"]
-    restored = []
+    """♻️ Ripristina i DB da GitHub"""
+    try:
+        github_token = st.secrets["github"]["token"]
+        repo_name = st.secrets["github"]["repo"]
+        branch_name = st.secrets["github"]["branch"]
+    except KeyError:
+        st.error("❌ Chiavi GitHub mancanti in secrets.toml")
+        return
 
-    for file_name in files_to_restore:
+    g = Github(github_token)
+    try:
+        repo = g.get_repo(repo_name)
+        branch = repo.get_branch(branch_name)
+    except GithubException as e:
+        st.error(f"❌ Errore repo/branch GitHub: {e}")
+        return
+
+    restored_files = []
+
+    for file_name in ["login_log.db", "manutenzioni.db"]:
         try:
-            gh_file = repo.get_contents(file_name, ref=branch)
+            gh_file = repo.get_contents(file_name, ref=branch_name)
+            content_bytes = base64.b64decode(gh_file.content)
             with open(file_name, "wb") as f:
-                f.write(gh_file.decoded_content)
-            restored.append(file_name)
-        except Exception as e:
-            st.warning(f"⚠️ File {file_name} non trovato su GitHub (status: {e})")
-    
-    if restored:
-        st.success(f"✅ Database ripristinati: {', '.join(restored)}")
+                f.write(content_bytes)
+            restored_files.append(file_name)
+        except GithubException as e:
+            st.warning(f"⚠️ File {file_name} non trovato su GitHub (status: {e.status})")
+
+    if restored_files:
+        st.success(f"✅ Database ripristinati: {', '.join(restored_files)}")
     else:
-        st.info("⚠️ Nessun database ripristinato da GitHub.")
+        st.warning("⚠️ Nessun database ripristinato da GitHub.")
 
 ## FUNZIONI PER SALVATAGGIO E VISUALIZZAZIONE INFO BACKUP TO GITHUB  
 
@@ -2234,4 +2275,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 

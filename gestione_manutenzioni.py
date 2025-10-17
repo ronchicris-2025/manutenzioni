@@ -48,39 +48,77 @@ def get_github_repo():
     return repo, branch
 
 
-def backup_db_to_github(file_path):
-    github_token = st.secrets["github"]["token"]
-    repo_name = st.secrets["github"]["repo"]
-    branch_name = st.secrets["github"]["branch"]
-
-    g = Github(github_token)
-    repo = g.get_repo(repo_name)
-
-    # Leggi il file in modalità binaria
-    with open(file_path, "rb") as f:
-        content = f.read()
-
+def backup_to_github():
     try:
-        # Prova a creare il file su GitHub
-        repo.create_file(
-            path=file_path,
-            message=f"💾 Backup {file_path} da Streamlit",
-            content=content,
-            branch=branch_name
-        )
-        st.success(f"✅ Backup di {file_path} completato")
-    except Exception as e:
-        # Se il file esiste già, aggiorna
-        contents = repo.get_contents(file_path, ref=branch_name)
-        repo.update_file(
-            path=file_path,
-            message=f"💾 Aggiornamento {file_path} da Streamlit",
-            content=content,
-            sha=contents.sha,
-            branch=branch_name
-        )
-        st.success(f"✅ Aggiornamento di {file_path} completato")
+        # --- Parametri dal secrets ---
+        github_token = st.secrets["github"]["token"]
+        repo_name = st.secrets["github"]["repo"]
+        branch_name = st.secrets["github"]["branch"]
 
+        g = Github(github_token)
+        repo = g.get_repo(repo_name)
+
+        db_files = ["login_log.db", "manutenzioni.db"]
+
+        for db_file in db_files:
+            try:
+                with open(db_file, "rb") as f:
+                    content_bytes = f.read()
+                
+                # Controlla se il file esiste già su GitHub
+                try:
+                    gh_file = repo.get_contents(db_file, ref=branch_name)
+                    repo.update_file(
+                        path=db_file,
+                        message=f"💾 Aggiornamento {db_file} da Streamlit",
+                        content=content_bytes,
+                        sha=gh_file.sha,
+                        branch=branch_name
+                    )
+                    st.success(f"✅ {db_file} aggiornato su GitHub.")
+                except:
+                    repo.create_file(
+                        path=db_file,
+                        message=f"💾 Backup {db_file} da Streamlit",
+                        content=content_bytes,
+                        branch=branch_name
+                    )
+                    st.success(f"✅ {db_file} creato su GitHub.")
+            except FileNotFoundError:
+                st.warning(f"⚠️ {db_file} non trovato in locale, impossibile fare il backup.")
+    except Exception as e:
+        st.error(f"❌ Errore durante il backup: {e}")
+
+# === RESTORE ===
+def restore_from_github():
+    try:
+        github_token = st.secrets["github"]["token"]
+        repo_name = st.secrets["github"]["repo"]
+        branch_name = st.secrets["github"]["branch"]
+
+        g = Github(github_token)
+        repo = g.get_repo(repo_name)
+
+        db_files = ["login_log.db", "manutenzioni.db"]
+        restored = []
+
+        for db_file in db_files:
+            try:
+                gh_file = repo.get_contents(db_file, ref=branch_name)
+                content = base64.b64decode(gh_file.content)
+                with open(db_file, "wb") as f:
+                    f.write(content)
+                restored.append(db_file)
+            except Exception as e:
+                st.warning(f"⚠️ File {db_file} non trovato o errore: {e}")
+
+        if restored:
+            st.success(f"✅ Database ripristinati: {', '.join(restored)}")
+        else:
+            st.info("⚠️ Nessun database ripristinato da GitHub.")
+
+    except Exception as e:
+        st.error(f"❌ Errore durante il ripristino: {e}")
 
 ## FUNZIONI PER SALVATAGGIO E VISUALIZZAZIONE INFO BACKUP TO GITHUB  
 
@@ -2229,6 +2267,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

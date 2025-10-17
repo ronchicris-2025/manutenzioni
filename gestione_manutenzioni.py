@@ -24,6 +24,7 @@ import io
 from io import BytesIO
 import requests
 import base64
+from github import Github
 
 # --- CONFIGURAZIONE E COSTANTI ---
 st.set_page_config(
@@ -174,6 +175,38 @@ def test_github_connection():
 
     except KeyError as e:
         st.error(f"❌ Chiave mancante in st.secrets: {e}")
+
+# VERIFICA TROVA FILE E PERCORSO SU GITHUB
+def test_github_db_files():
+    github_token = st.secrets["github"]["token"]
+    repo_name = st.secrets["github"]["repo"]
+    branch_name = st.secrets["github"]["branch"]
+
+    try:
+        g = Github(github_token)
+        repo = g.get_repo(repo_name)
+        st.info(f"✅ Connessione a GitHub OK. Repo '{repo_name}' trovata.")
+
+        # Verifica branch
+        branch = repo.get_branch(branch_name)
+        st.info(f"✅ Branch '{branch_name}' trovato nel repo.")
+
+        # Controlla file login_log.db
+        try:
+            login_log_file = repo.get_contents("login_log.db", ref=branch_name)
+            st.success(f"✅ File 'login_log.db' trovato su GitHub (sha: {login_log_file.sha})")
+        except Exception as e:
+            st.warning(f"⚠️ File 'login_log.db' non trovato su GitHub: {e}")
+
+        # Controlla file manutenzioni.db
+        try:
+            manut_file = repo.get_contents("manutenzioni.db", ref=branch_name)
+            st.success(f"✅ File 'manutenzioni.db' trovato su GitHub (sha: {manut_file.sha})")
+        except Exception as e:
+            st.warning(f"⚠️ File 'manutenzioni.db' non trovato su GitHub: {e}")
+
+    except Exception as e:
+        st.error(f"❌ Errore connessione GitHub: {e}")
 
 # FUNZIONE INIZIALIZZAZIONE LOGIN
 
@@ -2152,6 +2185,7 @@ def main():
     init_login_log()
     check_login()
     test_github_connection()
+    test_github_db_files()
     
     
 
@@ -2242,5 +2276,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 

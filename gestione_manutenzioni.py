@@ -90,6 +90,7 @@ def backup_to_github():
         st.error(f"❌ Errore durante il backup: {e}")
 
 # === RESTORE ===
+
 def restore_from_github():
     try:
         github_token = st.secrets["github"]["token"]
@@ -101,6 +102,15 @@ def restore_from_github():
 
         db_files = ["login_log.db", "manutenzioni.db"]
         restored = []
+
+        # 🔄 Chiudi tutte le connessioni SQLite aperte
+        import gc
+        for obj in gc.get_objects():
+            if isinstance(obj, sqlite3.Connection):
+                try:
+                    obj.close()
+                except:
+                    pass
 
         for db_file in db_files:
             try:
@@ -114,11 +124,15 @@ def restore_from_github():
 
         if restored:
             st.success(f"✅ Database ripristinati: {', '.join(restored)}")
-            # 👇 Forza il reload dei dati
             st.cache_data.clear()
             st.cache_resource.clear()
-            st.toast("🔄 Cache svuotata, database ricaricato.", icon="♻️")
+            st.toast("♻️ Database ricaricati correttamente.", icon="✅")
+
+            # 💡 Piccolo delay prima del rerun per mantenere la notifica visibile
+            import time
+            time.sleep(1.5)
             st.rerun()
+
         else:
             st.info("⚠️ Nessun database ripristinato da GitHub.")
 
@@ -2273,6 +2287,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

@@ -90,36 +90,59 @@ def backup_to_github():
 
 
 # --- RIPRISTINO DA GITHUB ---
+import requests
+import base64
+import streamlit as st
+
 def restore_from_github():
-    github_token = st.secrets["github"]["token"]
-    repo = st.secrets["github"]["repo"]
-    branch = st.secrets["github"]["branch"]
+    """Ripristina i database (login_log.db e manutenzioni.db) dal repository GitHub."""
+    try:
+        github = st.secrets["github"]
+        token = github["token"]
+        repo = github["repo"]
+        branch = github["branch"]
 
-    headers = {"Authorization": f"token {github_token}"}
-    db_files = ["login_log.db", "manutenzioni.db"]
-    restored = []
+        headers = {"Authorization": f"token {token}"}
+        db_files = ["login_log.db", "manutenzioni.db"]
+        restored = []
 
-    for db_file in db_files:
-        url = f"https://api.github.com/repos/{repo}/contents/{db_file}?ref={branch}"
-        r = requests.get(url, headers=headers)
+        for file_name in db_files:
+            url = f"https://api.github.com/repos/{repo}/contents/{file_name}?ref={branch}"
+            r = requests.get(url, headers=headers)
 
-        if r.status_code == 200:
-            data = r.json()
-            if data.get("encoding") == "base64":
-                content = base64.b64decode(data["content"])
-                with open(db_file, "wb") as f:
-                    f.write(content)
-                restored.append(db_file)
+            if r.status_code == 200:
+                data = r.json()
+                encoding = data.get("encoding")
+
+                # 🔹 Caso 1: file piccolo (GitHub restituisce base64 inline)
+                if encoding == "base64":
+                    content = base64.b64decode(data["content"])
+                    with open(file_name, "wb") as f:
+                        f.write(content)
+                    restored.append(file_name)
+
+                # 🔹 Caso 2: file grande → scarica da raw.githubusercontent
+                elif "download_url" in data:
+                    d = requests.get(data["download_url"])
+                    if d.status_code == 200:
+                        with open(file_name, "wb") as f:
+                            f.write(d.content)
+                        restored.append(file_name)
+                    else:
+                        st.warning(f"⚠️ Download fallito per {file_name} (status: {d.status_code})")
+                else:
+                    st.warning(f"⚠️ File {file_name} non trovato su GitHub (encoding: {encoding})")
+
             else:
-                st.warning(f"⚠️ File {db_file} non trovato su GitHub (encoding: {data.get('encoding')})")
+                st.warning(f"⚠️ Errore GitHub {r.status_code} per {file_name}")
+
+        if restored:
+            st.success(f"✅ Database ripristinati: {', '.join(restored)}")
         else:
-            st.warning(f"⚠️ File {db_file} non trovato su GitHub (status: {r.status_code})")
+            st.warning("⚠️ Nessun database ripristinato da GitHub.")
 
-    if restored:
-        st.success(f"✅ Database ripristinati: {', '.join(restored)}")
-    else:
-        st.warning("⚠️ Nessun database ripristinato da GitHub.")
-
+    except Exception as e:
+        st.error(f"❌ Errore durante il ripristino da GitHub: {e}")
 
 ## FUNZIONI PER SALVATAGGIO E VISUALIZZAZIONE INFO BACKUP TO GITHUB  
 
@@ -2268,4 +2291,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 

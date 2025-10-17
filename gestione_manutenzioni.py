@@ -24,7 +24,7 @@ import io
 from io import BytesIO
 import requests
 import base64
-from github import Github, InputGitTreeElement, GithubException
+from github import Github, GithubException
 import tempfile
 
 # --- CONFIGURAZIONE E COSTANTI ---
@@ -48,96 +48,39 @@ def get_github_repo():
     return repo, branch
 
 
-def backup_to_github():
-    """
-    Effettua il backup dei database login_log.db e manutenzioni.db su GitHub.
-    I dettagli di repo, branch e token devono essere definiti in st.secrets['github'].
-    """
-    import streamlit as st
-    import os
-
+def backup_db_to_github(file_path):
     github_token = st.secrets["github"]["token"]
     repo_name = st.secrets["github"]["repo"]
     branch_name = st.secrets["github"]["branch"]
 
-    files_to_backup = ["login_log.db", "manutenzioni.db"]
-    uploaded_files = []
+    g = Github(github_token)
+    repo = g.get_repo(repo_name)
+
+    # Leggi il file in modalità binaria
+    with open(file_path, "rb") as f:
+        content = f.read()
 
     try:
-        g = Github(github_token)
-        repo = g.get_repo(repo_name)
-        branch = repo.get_branch(branch_name)
-        base_tree = repo.get_git_tree(branch.commit.sha)
-
-        elements = []
-        for file_path in files_to_backup:
-            if not os.path.exists(file_path):
-                st.warning(f"⚠️ File {file_path} non trovato localmente. Ignorato.")
-                continue
-
-            with open(file_path, "rb") as f:
-                content = f.read()
-            # crea elemento del tree
-            element = InputGitTreeElement(
-                path=file_path,
-                mode="100644",
-                type="blob",
-                content=base64.b64encode(content).decode()  # PyGithub richiede base64
-            )
-            elements.append(element)
-            uploaded_files.append(file_path)
-
-        if not elements:
-            st.info("Nessun file da caricare.")
-            return
-
-        # crea il nuovo tree
-        new_tree = repo.create_git_tree(elements, base_tree)
-
-        # commit
-        parent_commit = repo.get_git_commit(branch.commit.sha)
-        commit_message = "💾 Backup DB da Streamlit"
-        new_commit = repo.create_git_commit(commit_message, new_tree, [parent_commit])
-
-        # aggiorna il branch
-        ref = repo.get_git_ref(f"heads/{branch_name}")
-        ref.edit(new_commit.sha)
-
-        st.success(f"✅ Backup completato su GitHub: {', '.join(uploaded_files)}")
-
+        # Prova a creare il file su GitHub
+        repo.create_file(
+            path=file_path,
+            message=f"💾 Backup {file_path} da Streamlit",
+            content=content,
+            branch=branch_name
+        )
+        st.success(f"✅ Backup di {file_path} completato")
     except Exception as e:
-        st.error(f"❌ Errore durante il backup: {e}")
+        # Se il file esiste già, aggiorna
+        contents = repo.get_contents(file_path, ref=branch_name)
+        repo.update_file(
+            path=file_path,
+            message=f"💾 Aggiornamento {file_path} da Streamlit",
+            content=content,
+            sha=contents.sha,
+            branch=branch_name
+        )
+        st.success(f"✅ Aggiornamento di {file_path} completato")
 
-# === RESTORE ===
-def restore_from_github():
-    try:
-        github_token = st.secrets["github"]["token"]
-        repo_name = st.secrets["github"]["repo"]
-        branch = st.secrets["github"]["branch"]
-
-        g = Github(github_token)
-        repo = g.get_repo(repo_name)
-
-        db_files = ["login_log.db", "manutenzioni.db"]
-        restored = []
-
-        for db_file in db_files:
-            try:
-                contents = repo.get_contents(db_file, ref=branch)
-                data = base64.b64decode(contents.content)
-                with open(db_file, "wb") as f:
-                    f.write(data)
-                restored.append(db_file)
-            except Exception as inner_e:
-                st.warning(f"⚠️ File {db_file} non trovato su GitHub: {inner_e}")
-
-        if restored:
-            st.success(f"✅ Database ripristinati: {', '.join(restored)}")
-        else:
-            st.warning("⚠️ Nessun database ripristinato da GitHub.")
-
-    except Exception as e:
-        st.error(f"❌ Errore nel ripristino: {e}")
 
 ## FUNZIONI PER SALVATAGGIO E VISUALIZZAZIONE INFO BACKUP TO GITHUB  
 
@@ -2286,6 +2229,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

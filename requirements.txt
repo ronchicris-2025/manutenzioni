@@ -8,3 +8,4 @@ reportlab
 openpyxl
 python-dateutil
 requests
+PyGithub

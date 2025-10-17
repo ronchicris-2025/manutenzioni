@@ -24,7 +24,7 @@ import io
 from io import BytesIO
 import requests
 import base64
-from github import Github, GithubException
+from github import Github, InputGitTreeElement, GithubException
 import tempfile
 
 # --- CONFIGURAZIONE E COSTANTI ---
@@ -50,42 +50,56 @@ def get_github_repo():
 
 # === BACKUP ===
 def backup_to_github():
+    """Backup DB su GitHub usando PyGithub (supporta file grandi)."""
     try:
         github_token = st.secrets["github"]["token"]
         repo_name = st.secrets["github"]["repo"]
-        branch = st.secrets["github"]["branch"]
+        branch = st.secrets["github"].get("branch", "main")
 
         g = Github(github_token)
         repo = g.get_repo(repo_name)
+
+        # ottieni l'ultimo commit del branch
         ref = repo.get_git_ref(f"heads/{branch}")
-        sha_latest_commit = ref.object.sha
-        base_tree = repo.get_git_tree(sha_latest_commit)
+        latest_commit = repo.get_git_commit(ref.object.sha)
+        base_tree = repo.get_git_tree(latest_commit.sha)
 
         db_files = ["login_log.db", "manutenzioni.db"]
         elements = []
 
         for db_file in db_files:
             if not os.path.exists(db_file):
-                st.warning(f"⚠️ File {db_file} non trovato, saltato.")
+                st.warning(f"⚠️ {db_file} non trovato localmente, salto.")
                 continue
 
+            # leggi bytes e crea blob (base64)
             with open(db_file, "rb") as f:
                 data = f.read()
+            # create_git_blob richiede content (string) e encoding
+            blob = repo.create_git_blob(base64.b64encode(data).decode("utf-8"), "base64")
 
-            blob = repo.create_git_blob(base64.b64encode(data).decode(), "base64")
-            elements.append(Github.InputGitTreeElement(db_file, "100644", "blob", blob.sha))
+            # InputGitTreeElement(path, mode, type, sha)
+            elem = InputGitTreeElement(db_file, "100644", "blob", blob.sha)
+            elements.append(elem)
 
         if not elements:
-            st.warning("⚠️ Nessun file da salvare su GitHub.")
+            st.info("Nessun file da salvare su GitHub.")
             return
 
+        # crea il nuovo tree a partire dal base_tree
         new_tree = repo.create_git_tree(elements, base_tree)
-        parent = repo.get_git_commit(sha_latest_commit)
-        commit_message = "💾 Backup DB da Streamlit (via PyGitHub)"
-        new_commit = repo.create_git_commit(commit_message, new_tree, [parent])
-        ref.edit(new_commit.sha)
-        st.success(f"✅ Backup completato su GitHub: {', '.join(db_files)}")
+        commit_message = "💾 Backup DB da Streamlit (via PyGithub)"
+        new_commit = repo.create_git_commit(commit_message, new_tree, [latest_commit])
 
+        # aggiorna il ref del branch per puntare al nuovo commit
+        ref.edit(new_commit.sha)
+
+        st.success(f"✅ Backup completato su GitHub: {', '.join([e.path for e in elements])}")
+
+    except GithubException as ge:
+        st.error(f"Errore PyGithub: {ge}")
+    except KeyError:
+        st.error("❌ Configurazione GitHub mancante in st.secrets (github.token/repo/branch).")
     except Exception as e:
         st.error(f"❌ Errore durante il backup: {e}")
 
@@ -2267,6 +2281,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

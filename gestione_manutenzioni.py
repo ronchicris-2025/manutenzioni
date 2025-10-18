@@ -821,15 +821,14 @@ def show_gestione_manutenzioni():
         df_comuni = load_data("comuni")
         comuni_list = df_comuni['comune'].tolist()
     
-        # SelectBox città
         selected_comune = st.selectbox(
-            "Seleziona Città *",
+            "Seleziona Città *", 
             options=[""] + comuni_list,
             key="citta_select_reactive",
             help="Selezionando una città, i campi sottostanti verranno compilati automaticamente."
         )
     
-        # Inizializza i valori nel session_state se non esistono
+        # Inizializza campi auto se non esistono
         for field, default in {
             "codice": "",
             "cap": "",
@@ -841,78 +840,32 @@ def show_gestione_manutenzioni():
             if f"{field}_form" not in st.session_state:
                 st.session_state[f"{field}_form"] = default
     
-        # Aggiorna valori quando viene selezionata una città
+        # Aggiorna campi auto se selezionata una città
         if selected_comune:
             city_data = df_comuni[df_comuni['comune'] == selected_comune]
             if not city_data.empty:
                 st.session_state.codice_form = city_data['codice'].iloc[0]
-                st.session_state.cap_form = str(city_data['cap'].iloc[0])
                 st.session_state.provincia_form = city_data['provincia'].iloc[0]
                 st.session_state.regione_form = city_data['regione'].iloc[0]
                 st.session_state.lat_form = float(city_data['lat'].iloc[0])
                 st.session_state.lon_form = float(city_data['lon'].iloc[0])
+                # CAP viene aggiornato solo se è vuoto (utente non ha modificato)
+                if not st.session_state.cap_form or st.session_state.cap_form == st.session_state.get("last_auto_cap", ""):
+                    st.session_state.cap_form = str(city_data['cap'].iloc[0])
+                    st.session_state.last_auto_cap = st.session_state.cap_form  # memoria per confronto futuro
     
-        # Mostra campi auto-compilati fuori form
+        # Mostra i campi auto-compilati
         st.markdown("#### 📍 Dati Comune selezionato")
         col1, col2 = st.columns(2)
         with col1:
             st.text_input("Codice Comune (auto)", value=st.session_state.codice_form, disabled=True)
-            st.session_state.cap_form = st.text_input("CAP (modificabile)", value=st.session_state.cap_form, key="cap_form_input")
+            st.text_input("CAP (modificabile)", value=st.session_state.cap_form, key="cap_form")
             st.text_input("Provincia (auto)", value=st.session_state.provincia_form, disabled=True)
             st.text_input("Regione (auto)", value=st.session_state.regione_form, disabled=True)
         with col2:
-            st.session_state.lat_form = st.number_input("Latitudine (auto)", value=st.session_state.lat_form, format="%.6f")
-            st.session_state.lon_form = st.number_input("Longitudine (auto)", value=st.session_state.lon_form, format="%.6f")
-    
-        # FORM per l’inserimento vero e proprio
-        with st.form("form_manuale"):
-            col1, col2 = st.columns(2)
-            with col1:
-                selected_brand_form = st.selectbox("Seleziona Brand/Formato *", options=brand_list, key="brand_form")
-                punto_vendita = st.text_input("Punto Vendita *", key="punto_vendita_form")
-                indirizzo = st.text_input("Indirizzo *", key="indirizzo_form")
-            with col2:
-                ultimo_intervento = st.date_input("Data Ultimo Intervento", key="ultimo_intervento_form")
-                prossimo_intervento = st.date_input("Data Prossimo Intervento", key="prossimo_intervento_form")
-                attrezzature = st.text_area("Attrezzature", key="attrezzature_form")
-                note = st.text_area("Note", key="note_form")
-                referente_pv = st.text_input("Referente", key="referente_pv_form")
-                telefono = st.text_input("Telefono", key="telefono_form")
-    
-            submitted = st.form_submit_button("Aggiungi Attività", use_container_width=True)
-    
-            if submitted:
-                if not selected_brand_form or not punto_vendita or not indirizzo or not selected_comune:
-                    st.error("Compila i campi obbligatori contrassegnati con *")
-                else:
-                    conn = get_connection()
-                    cursor = conn.cursor()
-                    try:
-                        cursor.execute(f'''
-                            INSERT INTO manutenzioni ({", ".join(MANUTENZIONI_COLUMNS)})
-                            VALUES ({", ".join(["?"]*len(MANUTENZIONI_COLUMNS))})
-                        ''', (
-                            punto_vendita, indirizzo, st.session_state.cap_form,
-                            selected_comune, st.session_state.provincia_form,
-                            st.session_state.regione_form, ultimo_intervento,
-                            prossimo_intervento, attrezzature, note,
-                            st.session_state.lat_form, st.session_state.lon_form,
-                            st.session_state.codice_form, selected_brand_form,
-                            referente_pv, telefono
-                        ))
-                        conn.commit()
-                        st.success("✅ Nuova attività aggiunta con successo!")
-                        st.toast("Attività inserita!", icon="✅")
-    
-                        # 🔹 Reset automatico dei campi fuori form dopo il submit
-                        for key in ["codice_form", "cap_form", "provincia_form", "regione_form", "lat_form", "lon_form"]:
-                            st.session_state[key] = "" if "cap" not in key else "0.0"
-    
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"Errore durante l'inserimento: {e}")
-                    finally:
-                        conn.close()
+            st.number_input("Latitudine (auto)", value=st.session_state.lat_form, format="%.6f", key="lat_form")
+            st.number_input("Longitudine (auto)", value=st.session_state.lon_form, format="%.6f", key="lon_form")
+
 
 
                         
@@ -2327,6 +2280,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

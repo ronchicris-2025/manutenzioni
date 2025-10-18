@@ -914,6 +914,7 @@ def show_gestione_manutenzioni():
                     finally:
                         conn.close()
 
+
                         
 ## FUNZIONE PROGRAMMAZIONE PER PAGINA PROGRAMMAZIONE
 
@@ -2326,6 +2327,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

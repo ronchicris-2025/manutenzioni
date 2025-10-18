@@ -826,7 +826,7 @@ def show_gestione_manutenzioni():
                 else:
                     st.session_state[key] = ""
             st.session_state.reset_campi_fuori_form = False
-            st.experimental_rerun()
+            st.rerun()
     
         # --- CARICAMENTO COMUNI E BRAND ---
         df_comuni = load_data("comuni")
@@ -919,7 +919,7 @@ def show_gestione_manutenzioni():
     
                         # --- RESET AUTOMATICO CAMPi FUORI FORM DOPO INSERIMENTO ---
                         st.session_state.reset_campi_fuori_form = True
-                        st.experimental_rerun()
+                        st.rerun()
                     except Exception as e:
                         st.error(f"Errore durante l'inserimento: {e}")
                     finally:
@@ -2342,6 +2342,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

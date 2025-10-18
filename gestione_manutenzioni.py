@@ -865,7 +865,51 @@ def show_gestione_manutenzioni():
         with col2:
             st.number_input("Latitudine (auto)", value=st.session_state.lat_form, format="%.6f", key="lat_form")
             st.number_input("Longitudine (auto)", value=st.session_state.lon_form, format="%.6f", key="lon_form")
+       # Form vero e proprio
+    with st.form("form_manuale"):
+        col1, col2 = st.columns(2)
+        with col1:
+            selected_brand_form = st.selectbox("Seleziona Brand/Formato *", options=brand_list, key="brand_form")
+            punto_vendita = st.text_input("Punto Vendita *", key="punto_vendita_form")
+            indirizzo = st.text_input("Indirizzo *", key="indirizzo_form")
+        with col2:
+            ultimo_intervento = st.date_input("Data Ultimo Intervento", key="ultimo_intervento_form")
+            prossimo_intervento = st.date_input("Data Prossimo Intervento", key="prossimo_intervento_form")
+            attrezzature = st.text_area("Attrezzature", key="attrezzature_form")
+            note = st.text_area("Note", key="note_form")
+            referente_pv = st.text_input("Referente", key="referente_pv_form")
+            telefono = st.text_input("Telefono", key="telefono_form")
 
+        submitted = st.form_submit_button("Aggiungi Attività", use_container_width=True)
+
+        if submitted:
+            if not selected_brand_form or not punto_vendita or not indirizzo or not selected_comune:
+                st.error("Compila i campi obbligatori contrassegnati con *")
+            else:
+                conn = get_connection()
+                cursor = conn.cursor()
+                try:
+                    cursor.execute(f'''
+                        INSERT INTO manutenzioni ({", ".join(MANUTENZIONI_COLUMNS)})
+                        VALUES ({", ".join(["?"]*len(MANUTENZIONI_COLUMNS))})
+                    ''', (
+                        punto_vendita, indirizzo, st.session_state.cap_form,
+                        selected_comune, st.session_state.provincia_form,
+                        st.session_state.regione_form, ultimo_intervento,
+                        prossimo_intervento, attrezzature, note,
+                        st.session_state.lat_form, st.session_state.lon_form,
+                        st.session_state.codice_form, selected_brand_form,
+                        referente_pv, telefono
+                    ))
+                    conn.commit()
+                    st.success("✅ Nuova attività aggiunta con successo!")
+                    st.toast("Attività inserita!", icon="✅")
+                    st.session_state.reset_form_flag = True
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Errore durante l'inserimento: {e}")
+                finally:
+                    conn.close()
 
 
                         
@@ -2280,6 +2324,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

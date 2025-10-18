@@ -854,19 +854,30 @@ def show_gestione_manutenzioni():
                     st.session_state.cap_form = str(city_data['cap'].iloc[0])
                     st.session_state.last_auto_cap = st.session_state.cap_form
     
-        # ✅ Riquadro per dati auto-compilati
-        with st.expander("📍 Dati Comune selezionato (auto)"):
-            col1, col2 = st.columns(2)
-            with col1:
-                st.text_input("Codice Comune", value=st.session_state.codice_form, disabled=True)
-                st.text_input("CAP (modificabile)", value=st.session_state.cap_form, key="cap_form")
-                st.text_input("Provincia", value=st.session_state.provincia_form, disabled=True)
-                st.text_input("Regione", value=st.session_state.regione_form, disabled=True)
-            with col2:
-                st.number_input("Latitudine", value=st.session_state.lat_form, format="%.6f", key="lat_form")
-                st.number_input("Longitudine", value=st.session_state.lon_form, format="%.6f", key="lon_form")
+        # ✅ Riquadro grafico per dati auto-compilati
+        st.markdown("""
+            <div style="border:2px solid #f0f0f0; padding:10px; border-radius:8px; background-color:#fafafa;">
+            <h4>📍 Dati Comune selezionato (auto)</h4>
+            </div>
+        """, unsafe_allow_html=True)
     
-        # ✅ Form vera e propria
+        col1, col2 = st.columns(2)
+        with col1:
+            st.text_input("Codice Comune", value=st.session_state.codice_form, disabled=True)
+            st.text_input("CAP (modificabile)", value=st.session_state.cap_form, key="cap_form")
+            st.text_input("Provincia", value=st.session_state.provincia_form, disabled=True)
+            st.text_input("Regione", value=st.session_state.regione_form, disabled=True)
+        with col2:
+            st.number_input("Latitudine", value=st.session_state.lat_form, format="%.6f", key="lat_form")
+            st.number_input("Longitudine", value=st.session_state.lon_form, format="%.6f", key="lon_form")
+    
+        # ✅ Form vera e propria con riquadro e bottone reset
+        st.markdown("""
+            <div style="border:2px solid #e0e0e0; padding:10px; border-radius:8px; background-color:#fefefe;">
+            <h4>➕ Inserimento manuale punto vendita</h4>
+            </div>
+        """, unsafe_allow_html=True)
+    
         with st.form("form_manuale"):
             col1, col2 = st.columns(2)
             with col1:
@@ -881,9 +892,10 @@ def show_gestione_manutenzioni():
                 referente_pv = st.text_input("Referente", key="referente_pv_form")
                 telefono = st.text_input("Telefono", key="telefono_form")
     
-            # Bottone Reset Form dentro la form
-            reset_clicked = st.form_submit_button("🔄 Reset Form", on_click=lambda: reset_form_fields())
+            # Bottone Reset Form
+            st.form_submit_button("🔄 Reset Form", on_click=lambda: reset_form_fields())
     
+            # Bottone Aggiungi
             submitted = st.form_submit_button("Aggiungi Attività", use_container_width=True)
     
             if submitted:
@@ -913,17 +925,21 @@ def show_gestione_manutenzioni():
                         st.error(f"Errore durante l'inserimento: {e}")
                     finally:
                         conn.close()
-    
-    # Funzione helper per resettare solo i campi della form
-    def reset_form_fields():
-        form_keys = [
-            "brand_form", "punto_vendita_form", "indirizzo_form",
-            "ultimo_intervento_form", "prossimo_intervento_form",
-            "attrezzature_form", "note_form", "referente_pv_form", "telefono_form"
-        ]
-        for key in form_keys:
-            if key in st.session_state:
-                st.session_state[key] = "" if "text" in key or "area" in key or "punto" in key else None
+
+# Funzione helper per resettare solo i campi della form
+def reset_form_fields():
+    form_keys = [
+        "brand_form", "punto_vendita_form", "indirizzo_form",
+        "ultimo_intervento_form", "prossimo_intervento_form",
+        "attrezzature_form", "note_form", "referente_pv_form", "telefono_form"
+    ]
+    for key in form_keys:
+        if key in st.session_state:
+            if "form" in key and "text" in key:
+                st.session_state[key] = ""
+            else:
+                st.session_state[key] = None
+
 
 
                         
@@ -2338,6 +2354,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

@@ -898,7 +898,7 @@ def show_gestione_manutenzioni():
             # Bottone Aggiungi
             col1, col2, col3 = st.columns([1, 1, 1])
             with col2:
-            submitted = st.form_submit_button("🔒 CONFERMA INSERIMENTO", type="primary")
+                submitted = st.form_submit_button("🔒 CONFERMA INSERIMENTO", type="primary")
     
             if submitted:
                 if not selected_brand_form or not punto_vendita or not indirizzo or not selected_comune:
@@ -2356,6 +2356,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

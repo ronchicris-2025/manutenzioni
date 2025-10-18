@@ -817,7 +817,6 @@ def show_gestione_manutenzioni():
             )  
     with tab2:
         st.subheader("Inserisci un nuovo punto vendita")
-    
         df_comuni = load_data("comuni")
         comuni_list = df_comuni['comune'].tolist()
     
@@ -827,43 +826,31 @@ def show_gestione_manutenzioni():
             key="citta_select_reactive",
             help="Selezionando una città, i campi sottostanti verranno compilati automaticamente."
         )
-    
-        # Inizializza i valori nel session_state se non esistono
-        for field, default in {
-            "codice": "",
-            "cap": "",
-            "provincia": "",
-            "regione": "",
-            "lat": 0.0,
-            "lon": 0.0
-        }.items():
-            if f"{field}_form" not in st.session_state:
-                st.session_state[f"{field}_form"] = default
-    
-        # Se è stato selezionato un comune, aggiorna i valori in sessione
+
+        codice_val, cap_val, prov_val, reg_val, lat_val, lon_val = "", "", "", "", 0.0, 0.0
         if selected_comune:
             city_data = df_comuni[df_comuni['comune'] == selected_comune]
             if not city_data.empty:
-                st.session_state.codice_form = city_data['codice'].iloc[0]
-                st.session_state.cap_form = str(city_data['cap'].iloc[0])
-                st.session_state.provincia_form = city_data['provincia'].iloc[0]
-                st.session_state.regione_form = city_data['regione'].iloc[0]
-                st.session_state.lat_form = float(city_data['lat'].iloc[0])
-                st.session_state.lon_form = float(city_data['lon'].iloc[0])
-    
-        # Mostra i campi auto-compilati
-        st.markdown("#### 📍 Dati Comune selezionato")
+                codice_val = city_data['codice'].iloc[0]
+                cap_val = city_data['cap'].iloc[0]
+                prov_val = city_data['provincia'].iloc[0]
+                reg_val = city_data['regione'].iloc[0]
+                lat_val = city_data['lat'].iloc[0]
+                lon_val = city_data['lon'].iloc[0]
+
+        # 🔹 CAMPi AUTOCOMPLETATI fuori dalla form
+        st.markdown("#### Dati Comune selezionato")
         col1, col2 = st.columns(2)
         with col1:
-            st.text_input("Codice Comune (auto)", value=st.session_state.codice_form, disabled=True)
-            st.session_state.cap_form = st.text_input("CAP (modificabile)", value=st.session_state.cap_form, key="cap_form_input")
-            st.text_input("Provincia (auto)", value=st.session_state.provincia_form, disabled=True)
-            st.text_input("Regione (auto)", value=st.session_state.regione_form, disabled=True)
+            st.text_input("Codice Comune (auto)", value=codice_val, disabled=True)
+            cap_val = st.text_input("CAP (modificabile)", value=cap_val, key="cap_form")
+            st.text_input("Provincia (auto)", value=prov_val, disabled=True)
+            st.text_input("Regione (auto)", value=reg_val, disabled=True)
         with col2:
-            st.session_state.lat_form = st.number_input("Latitudine (auto)", value=st.session_state.lat_form, format="%.6f")
-            st.session_state.lon_form = st.number_input("Longitudine (auto)", value=st.session_state.lon_form, format="%.6f")
-    
-        # FORM per l’inserimento vero e proprio
+            st.number_input("Latitudine (auto)", value=lat_val, format="%.6f", key="lat_form")
+            st.number_input("Longitudine (auto)", value=lon_val, format="%.6f", key="lon_form")
+
+        # 🔹 FORM per l’inserimento vero e proprio
         with st.form("form_manuale"):
             col1, col2 = st.columns(2)
             with col1:
@@ -877,9 +864,9 @@ def show_gestione_manutenzioni():
                 note = st.text_area("Note", key="note_form")
                 referente_pv = st.text_input("Referente", key="referente_pv_form")
                 telefono = st.text_input("Telefono", key="telefono_form")
-    
+
             submitted = st.form_submit_button("Aggiungi Attività", use_container_width=True)
-    
+
             if submitted:
                 if not selected_brand_form or not punto_vendita or not indirizzo or not selected_comune:
                     st.error("Compila i campi obbligatori contrassegnati con *")
@@ -890,19 +877,13 @@ def show_gestione_manutenzioni():
                         cursor.execute(f'''
                             INSERT INTO manutenzioni ({", ".join(MANUTENZIONI_COLUMNS)})
                             VALUES ({", ".join(["?"]*len(MANUTENZIONI_COLUMNS))})
-                        ''', (
-                            punto_vendita, indirizzo, st.session_state.cap_form,
-                            selected_comune, st.session_state.provincia_form,
-                            st.session_state.regione_form, ultimo_intervento,
-                            prossimo_intervento, attrezzature, note,
-                            st.session_state.lat_form, st.session_state.lon_form,
-                            st.session_state.codice_form, selected_brand_form,
-                            referente_pv, telefono
-                        ))
+                        ''', (punto_vendita, indirizzo, st.session_state.cap_form, selected_comune,
+                            prov_val, reg_val, ultimo_intervento, prossimo_intervento, 
+                            attrezzature, note, st.session_state.lat_form, st.session_state.lon_form,
+                            codice_val, selected_brand_form, referente_pv, telefono))
                         conn.commit()
                         st.success("✅ Nuova attività aggiunta con successo!")
                         st.toast("Attività inserita!", icon="✅")
-                        st.session_state.reset_form_flag = True
                         st.rerun()
                     except Exception as e:
                         st.error(f"Errore durante l'inserimento: {e}")
@@ -2323,6 +2304,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

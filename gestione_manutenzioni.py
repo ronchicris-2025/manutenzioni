@@ -896,7 +896,7 @@ def show_gestione_manutenzioni():
             st.form_submit_button("🔄 Reset Form", on_click=lambda: reset_form_fields())
     
             # Bottone Aggiungi
-            submitted = st.form_submit_button("CONFERMA INSERIMENTO")
+            submitted = st.form_submit_button("🔒 CONFERMA INSERIMENTO", type="primary")
     
             if submitted:
                 if not selected_brand_form or not punto_vendita or not indirizzo or not selected_comune:
@@ -2354,6 +2354,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

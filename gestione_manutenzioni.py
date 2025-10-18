@@ -818,10 +818,23 @@ def show_gestione_manutenzioni():
     with tab2:
         st.subheader("Inserisci un nuovo punto vendita")
     
+        # --- RESET AUTOMATICO DEI CAMPI FUORI FORM ---
+        if st.session_state.get("reset_campi_fuori_form", False):
+            for key in ["codice_form", "cap_form", "provincia_form", "regione_form", "lat_form", "lon_form"]:
+                if "lat" in key or "lon" in key:
+                    st.session_state[key] = 0.0
+                else:
+                    st.session_state[key] = ""
+            st.session_state.reset_campi_fuori_form = False
+            st.experimental_rerun()
+    
+        # --- CARICAMENTO COMUNI E BRAND ---
         df_comuni = load_data("comuni")
         comuni_list = df_comuni['comune'].tolist()
+        df_brands = load_data("format")
+        brand_list = df_brands['brand'].tolist()
     
-        # SelectBox città
+        # --- SELECTBOX COMUNE ---
         selected_comune = st.selectbox(
             "Seleziona Città *",
             options=[""] + comuni_list,
@@ -829,7 +842,7 @@ def show_gestione_manutenzioni():
             help="Selezionando una città, i campi sottostanti verranno compilati automaticamente."
         )
     
-        # Inizializza i valori nel session_state se non esistono
+        # --- INIZIALIZZAZIONE CAMPi FUORI FORM ---
         for field, default in {
             "codice": "",
             "cap": "",
@@ -841,7 +854,7 @@ def show_gestione_manutenzioni():
             if f"{field}_form" not in st.session_state:
                 st.session_state[f"{field}_form"] = default
     
-        # Aggiorna valori quando viene selezionata una città
+        # --- AGGIORNAMENTO CAMPi FUORI FORM SE COMUNE SELEZIONATO ---
         if selected_comune:
             city_data = df_comuni[df_comuni['comune'] == selected_comune]
             if not city_data.empty:
@@ -852,7 +865,7 @@ def show_gestione_manutenzioni():
                 st.session_state.lat_form = float(city_data['lat'].iloc[0])
                 st.session_state.lon_form = float(city_data['lon'].iloc[0])
     
-        # Mostra campi auto-compilati fuori form
+        # --- WIDGET FUORI FORM ---
         st.markdown("#### 📍 Dati Comune selezionato")
         col1, col2 = st.columns(2)
         with col1:
@@ -864,7 +877,7 @@ def show_gestione_manutenzioni():
             st.session_state.lat_form = st.number_input("Latitudine (auto)", value=st.session_state.lat_form, format="%.6f")
             st.session_state.lon_form = st.number_input("Longitudine (auto)", value=st.session_state.lon_form, format="%.6f")
     
-        # FORM per l’inserimento vero e proprio
+        # --- FORM INSERIMENTO ---
         with st.form("form_manuale"):
             col1, col2 = st.columns(2)
             with col1:
@@ -904,15 +917,14 @@ def show_gestione_manutenzioni():
                         st.success("✅ Nuova attività aggiunta con successo!")
                         st.toast("Attività inserita!", icon="✅")
     
-                        # 🔹 Reset automatico dei campi fuori form dopo il submit
-                        for key in ["codice_form", "cap_form", "provincia_form", "regione_form", "lat_form", "lon_form"]:
-                            st.session_state[key] = "" if "cap" not in key else "0.0"
-    
-                        st.rerun()
+                        # --- RESET AUTOMATICO CAMPi FUORI FORM DOPO INSERIMENTO ---
+                        st.session_state.reset_campi_fuori_form = True
+                        st.experimental_rerun()
                     except Exception as e:
                         st.error(f"Errore durante l'inserimento: {e}")
                     finally:
                         conn.close()
+
 
 
 
@@ -2330,6 +2342,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

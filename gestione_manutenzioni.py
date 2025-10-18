@@ -856,8 +856,8 @@ def show_gestione_manutenzioni():
     
         # ✅ Riquadro grafico per dati auto-compilati
         st.markdown("""
-            <div style="border:2px solid #f0f0f0; padding:10px; border-radius:8px; background-color:#fafafa;">
-            <h4>📍 Dati Comune selezionato (auto)</h4>
+            <div style="border:2px solid #f0f0f0; padding:10px; border-radius:8px; background-color:#fefefe;">
+            <h4>📍 Dati Autocomplilati Comune selezionato </h4>
             </div>
         """, unsafe_allow_html=True)
     
@@ -896,8 +896,7 @@ def show_gestione_manutenzioni():
             with col1:
                  # Bottone Reset Form
                 st.form_submit_button("🔄 Reset Form", on_click=lambda: reset_form_fields())
-            with col2:
-            st.markdown("---")   
+                </div>   
                 # Bottone Aggiungi
                 submitted = st.form_submit_button("🔒 CONFERMA INSERIMENTO", type="primary")
     
@@ -2357,6 +2356,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

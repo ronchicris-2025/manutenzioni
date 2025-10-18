@@ -815,7 +815,7 @@ def show_gestione_manutenzioni():
                 file_name=f"manutenzioni_{datetime.datetime.now().strftime('%Y-%m-%d')}.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )  
-   with tab2:
+    with tab2:
         st.subheader("Inserisci un nuovo punto vendita")
         df_comuni = load_data("comuni")
         comuni_list = df_comuni['comune'].tolist()
@@ -2301,6 +2301,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

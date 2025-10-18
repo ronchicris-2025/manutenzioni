@@ -849,67 +849,81 @@ def show_gestione_manutenzioni():
                 st.session_state.regione_form = city_data['regione'].iloc[0]
                 st.session_state.lat_form = float(city_data['lat'].iloc[0])
                 st.session_state.lon_form = float(city_data['lon'].iloc[0])
-                # CAP viene aggiornato solo se è vuoto (utente non ha modificato)
+                # CAP viene aggiornato solo se vuoto o corrisponde al precedente auto
                 if not st.session_state.cap_form or st.session_state.cap_form == st.session_state.get("last_auto_cap", ""):
                     st.session_state.cap_form = str(city_data['cap'].iloc[0])
-                    st.session_state.last_auto_cap = st.session_state.cap_form  # memoria per confronto futuro
+                    st.session_state.last_auto_cap = st.session_state.cap_form
     
-        # Mostra i campi auto-compilati
-        st.markdown("#### 📍 Dati Comune selezionato")
-        col1, col2 = st.columns(2)
-        with col1:
-            st.text_input("Codice Comune (auto)", value=st.session_state.codice_form, disabled=True)
-            st.text_input("CAP (modificabile)", value=st.session_state.cap_form, key="cap_form")
-            st.text_input("Provincia (auto)", value=st.session_state.provincia_form, disabled=True)
-            st.text_input("Regione (auto)", value=st.session_state.regione_form, disabled=True)
-        with col2:
-            st.number_input("Latitudine (auto)", value=st.session_state.lat_form, format="%.6f", key="lat_form")
-            st.number_input("Longitudine (auto)", value=st.session_state.lon_form, format="%.6f", key="lon_form")
-       # Form vero e proprio
-    with st.form("form_manuale"):
-        col1, col2 = st.columns(2)
-        with col1:
-            selected_brand_form = st.selectbox("Seleziona Brand/Formato *", options=brand_list, key="brand_form")
-            punto_vendita = st.text_input("Punto Vendita *", key="punto_vendita_form")
-            indirizzo = st.text_input("Indirizzo *", key="indirizzo_form")
-        with col2:
-            ultimo_intervento = st.date_input("Data Ultimo Intervento", key="ultimo_intervento_form")
-            prossimo_intervento = st.date_input("Data Prossimo Intervento", key="prossimo_intervento_form")
-            attrezzature = st.text_area("Attrezzature", key="attrezzature_form")
-            note = st.text_area("Note", key="note_form")
-            referente_pv = st.text_input("Referente", key="referente_pv_form")
-            telefono = st.text_input("Telefono", key="telefono_form")
-
-        submitted = st.form_submit_button("Aggiungi Attività", use_container_width=True)
-
-        if submitted:
-            if not selected_brand_form or not punto_vendita or not indirizzo or not selected_comune:
-                st.error("Compila i campi obbligatori contrassegnati con *")
-            else:
-                conn = get_connection()
-                cursor = conn.cursor()
-                try:
-                    cursor.execute(f'''
-                        INSERT INTO manutenzioni ({", ".join(MANUTENZIONI_COLUMNS)})
-                        VALUES ({", ".join(["?"]*len(MANUTENZIONI_COLUMNS))})
-                    ''', (
-                        punto_vendita, indirizzo, st.session_state.cap_form,
-                        selected_comune, st.session_state.provincia_form,
-                        st.session_state.regione_form, ultimo_intervento,
-                        prossimo_intervento, attrezzature, note,
-                        st.session_state.lat_form, st.session_state.lon_form,
-                        st.session_state.codice_form, selected_brand_form,
-                        referente_pv, telefono
-                    ))
-                    conn.commit()
-                    st.success("✅ Nuova attività aggiunta con successo!")
-                    st.toast("Attività inserita!", icon="✅")
-                    st.session_state.reset_form_flag = True
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"Errore durante l'inserimento: {e}")
-                finally:
-                    conn.close()
+        # ✅ Riquadro per dati auto-compilati
+        with st.expander("📍 Dati Comune selezionato (auto)"):
+            col1, col2 = st.columns(2)
+            with col1:
+                st.text_input("Codice Comune", value=st.session_state.codice_form, disabled=True)
+                st.text_input("CAP (modificabile)", value=st.session_state.cap_form, key="cap_form")
+                st.text_input("Provincia", value=st.session_state.provincia_form, disabled=True)
+                st.text_input("Regione", value=st.session_state.regione_form, disabled=True)
+            with col2:
+                st.number_input("Latitudine", value=st.session_state.lat_form, format="%.6f", key="lat_form")
+                st.number_input("Longitudine", value=st.session_state.lon_form, format="%.6f", key="lon_form")
+    
+        # ✅ Form vera e propria
+        with st.form("form_manuale"):
+            col1, col2 = st.columns(2)
+            with col1:
+                selected_brand_form = st.selectbox("Seleziona Brand/Formato *", options=brand_list, key="brand_form")
+                punto_vendita = st.text_input("Punto Vendita *", key="punto_vendita_form")
+                indirizzo = st.text_input("Indirizzo *", key="indirizzo_form")
+            with col2:
+                ultimo_intervento = st.date_input("Data Ultimo Intervento", key="ultimo_intervento_form")
+                prossimo_intervento = st.date_input("Data Prossimo Intervento", key="prossimo_intervento_form")
+                attrezzature = st.text_area("Attrezzature", key="attrezzature_form")
+                note = st.text_area("Note", key="note_form")
+                referente_pv = st.text_input("Referente", key="referente_pv_form")
+                telefono = st.text_input("Telefono", key="telefono_form")
+    
+            # Bottone Reset Form dentro la form
+            reset_clicked = st.form_submit_button("🔄 Reset Form", on_click=lambda: reset_form_fields())
+    
+            submitted = st.form_submit_button("Aggiungi Attività", use_container_width=True)
+    
+            if submitted:
+                if not selected_brand_form or not punto_vendita or not indirizzo or not selected_comune:
+                    st.error("Compila i campi obbligatori contrassegnati con *")
+                else:
+                    conn = get_connection()
+                    cursor = conn.cursor()
+                    try:
+                        cursor.execute(f'''
+                            INSERT INTO manutenzioni ({", ".join(MANUTENZIONI_COLUMNS)})
+                            VALUES ({", ".join(["?"]*len(MANUTENZIONI_COLUMNS))})
+                        ''', (
+                            punto_vendita, indirizzo, st.session_state.cap_form,
+                            selected_comune, st.session_state.provincia_form,
+                            st.session_state.regione_form, ultimo_intervento,
+                            prossimo_intervento, attrezzature, note,
+                            st.session_state.lat_form, st.session_state.lon_form,
+                            st.session_state.codice_form, selected_brand_form,
+                            referente_pv, telefono
+                        ))
+                        conn.commit()
+                        st.success("✅ Nuova attività aggiunta con successo!")
+                        st.toast("Attività inserita!", icon="✅")
+                        reset_form_fields()  # reset dei soli campi della form
+                    except Exception as e:
+                        st.error(f"Errore durante l'inserimento: {e}")
+                    finally:
+                        conn.close()
+    
+    # Funzione helper per resettare solo i campi della form
+    def reset_form_fields():
+        form_keys = [
+            "brand_form", "punto_vendita_form", "indirizzo_form",
+            "ultimo_intervento_form", "prossimo_intervento_form",
+            "attrezzature_form", "note_form", "referente_pv_form", "telefono_form"
+        ]
+        for key in form_keys:
+            if key in st.session_state:
+                st.session_state[key] = "" if "text" in key or "area" in key or "punto" in key else None
 
 
                         
@@ -2324,6 +2338,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

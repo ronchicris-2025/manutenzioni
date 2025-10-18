@@ -857,13 +857,14 @@ def show_gestione_manutenzioni():
         st.markdown("#### 📍 Dati Comune selezionato")
         col1, col2 = st.columns(2)
         with col1:
-            st.text_input("Codice Comune (auto)", value=st.session_state.get("codice_val", ""), disabled=True)
-            st.text_input("CAP (modificabile)", value=st.session_state.get("cap_form", ""), key="cap_form")
-            st.text_input("Provincia (auto)", value=st.session_state.get("prov_val", ""), disabled=True)
-            st.text_input("Regione (auto)", value=st.session_state.get("reg_val", ""), disabled=True)
+            st.text_input("Codice Comune (auto)", value=st.session_state.get("codice_val", ""), disabled=True, key="codice_val_display")
+            st.text_input("CAP (modificabile)", key="cap_form")
+            st.text_input("Provincia (auto)", value=st.session_state.get("prov_val", ""), disabled=True, key="prov_val_display")
+            st.text_input("Regione (auto)", value=st.session_state.get("reg_val", ""), disabled=True, key="reg_val_display")
         with col2:
-            st.number_input("Latitudine (auto)", value=st.session_state.get("lat_form", 0.0), format="%.6f", key="lat_form")
-            st.number_input("Longitudine (auto)", value=st.session_state.get("lon_form", 0.0), format="%.6f", key="lon_form")
+            st.number_input("Latitudine (auto)", key="lat_form", format="%.6f")
+            st.number_input("Longitudine (auto)", key="lon_form", format="%.6f")
+
     
         # 🔹 FORM di inserimento
         with st.form("form_manuale"):
@@ -2332,6 +2333,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

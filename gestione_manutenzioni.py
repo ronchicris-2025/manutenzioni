@@ -821,6 +821,7 @@ def show_gestione_manutenzioni():
         df_comuni = load_data("comuni")
         comuni_list = df_comuni['comune'].tolist()
     
+        # Selectbox città
         selected_comune = st.selectbox(
             "Seleziona Città *", 
             options=[""] + comuni_list,
@@ -828,7 +829,7 @@ def show_gestione_manutenzioni():
             help="Selezionando una città, i campi sottostanti verranno compilati automaticamente."
         )
     
-        # Inizializza i valori nel session_state se non esistono
+        # Inizializza i campi auto se non esistono
         for field, default in {
             "codice": "",
             "cap": "",
@@ -840,7 +841,7 @@ def show_gestione_manutenzioni():
             if f"{field}_form" not in st.session_state:
                 st.session_state[f"{field}_form"] = default
     
-        # Se è stato selezionato un comune, aggiorna i valori in sessione
+        # Aggiorna campi auto se è stata selezionata una città
         if selected_comune:
             city_data = df_comuni[df_comuni['comune'] == selected_comune]
             if not city_data.empty:
@@ -856,14 +857,21 @@ def show_gestione_manutenzioni():
         col1, col2 = st.columns(2)
         with col1:
             st.text_input("Codice Comune (auto)", value=st.session_state.codice_form, disabled=True)
-            st.session_state.cap_form = st.text_input("CAP (modificabile)", value=st.session_state.cap_form, key="cap_form_input")
+            st.text_input("CAP (modificabile)", value=st.session_state.cap_form, key="cap_form")
             st.text_input("Provincia (auto)", value=st.session_state.provincia_form, disabled=True)
             st.text_input("Regione (auto)", value=st.session_state.regione_form, disabled=True)
         with col2:
-            st.session_state.lat_form = st.number_input("Latitudine (auto)", value=st.session_state.lat_form, format="%.6f")
-            st.session_state.lon_form = st.number_input("Longitudine (auto)", value=st.session_state.lon_form, format="%.6f")
+            st.number_input("Latitudine (auto)", value=st.session_state.lat_form, format="%.6f", key="lat_form")
+            st.number_input("Longitudine (auto)", value=st.session_state.lon_form, format="%.6f", key="lon_form")
     
-        # FORM per l’inserimento vero e proprio
+        # Pulsante reset campi auto
+        if st.button("🔄 Reset campi auto"):
+            for field in ["codice_form","cap_form","provincia_form","regione_form","lat_form","lon_form"]:
+                st.session_state[field] = "" if "cap" not in field and "lat" not in field and "lon" not in field else 0.0
+            st.session_state.citta_select_reactive = ""
+            st.experimental_rerun()
+    
+        # Form vero e proprio
         with st.form("form_manuale"):
             col1, col2 = st.columns(2)
             with col1:
@@ -908,6 +916,7 @@ def show_gestione_manutenzioni():
                         st.error(f"Errore durante l'inserimento: {e}")
                     finally:
                         conn.close()
+
 
 
 
@@ -2323,6 +2332,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

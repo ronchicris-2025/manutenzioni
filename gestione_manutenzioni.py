@@ -2288,9 +2288,6 @@ def main():
 
     if st.sidebar.button("💾 Salva database su GitHub"):
         backup_to_github()
-
-    if st.sidebar.button("♻️ Ripristina database da GitHub"):
-        restore_from_github()
         
     last_backup = get_backup_timestamp()
     
@@ -2303,6 +2300,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

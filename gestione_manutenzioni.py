@@ -893,10 +893,11 @@ def show_gestione_manutenzioni():
                 telefono = st.text_input("Telefono", key="telefono_form")
             
             col1, col2, col3 = st.columns([1, 1, 1])
-            with col2:
+            with col1:
                  # Bottone Reset Form
                 st.form_submit_button("🔄 Reset Form", on_click=lambda: reset_form_fields())
-            
+            with col2:
+            st.markdown("---")   
                 # Bottone Aggiungi
                 submitted = st.form_submit_button("🔒 CONFERMA INSERIMENTO", type="primary")
     
@@ -2356,6 +2357,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

@@ -48,46 +48,48 @@ def get_github_repo():
     return repo, branch
 
 
-def backup_to_github():
-    try:
-        # --- Parametri dal secrets ---
-        github_token = st.secrets["github"]["token"]
-        repo_name = st.secrets["github"]["repo"]
-        branch_name = st.secrets["github"]["branch"]
+def backup_to_github_simple():
+    github_token = st.secrets["github"]["token"]
+    repo = st.secrets["github"]["repo"]
+    branch = st.secrets["github"]["branch"]
 
-        g = Github(github_token)
-        repo = g.get_repo(repo_name)
+    db_files = ["login_log.db", "manutenzioni.db"]
+    headers = {
+        "Authorization": f"token {github_token}",
+        "Accept": "application/vnd.github+json"
+    }
 
-        db_files = ["login_log.db", "manutenzioni.db"]
-
-        for db_file in db_files:
+    for db_file in db_files:
+        if os.path.exists(db_file):
             try:
                 with open(db_file, "rb") as f:
-                    content_bytes = f.read()
-                
-                # Controlla se il file esiste già su GitHub
-                try:
-                    gh_file = repo.get_contents(db_file, ref=branch_name)
-                    repo.update_file(
-                        path=db_file,
-                        message=f"💾 Aggiornamento {db_file} da Streamlit",
-                        content=content_bytes,
-                        sha=gh_file.sha,
-                        branch=branch_name
-                    )
-                    st.success(f"✅ {db_file} aggiornato su GitHub.")
-                except:
-                    repo.create_file(
-                        path=db_file,
-                        message=f"💾 Backup {db_file} da Streamlit",
-                        content=content_bytes,
-                        branch=branch_name
-                    )
-                    st.success(f"✅ {db_file} creato su GitHub.")
-            except FileNotFoundError:
-                st.warning(f"⚠️ {db_file} non trovato in locale, impossibile fare il backup.")
-    except Exception as e:
-        st.error(f"❌ Errore durante il backup: {e}")
+                    content = base64.b64encode(f.read()).decode("utf-8")
+
+                # Controlla SHA esistente per evitare errori 409
+                get_url = f"https://api.github.com/repos/{repo}/contents/{db_file}?ref={branch}"
+                get_res = requests.get(get_url, headers=headers)
+                sha = get_res.json().get("sha") if get_res.status_code == 200 else None
+
+                # Effettua il PUT
+                put_url = f"https://api.github.com/repos/{repo}/contents/{db_file}"
+                data = {
+                    "message": f"💾 Backup {db_file} da Streamlit",
+                    "content": content,
+                    "branch": branch,
+                }
+                if sha:
+                    data["sha"] = sha
+
+                put_res = requests.put(put_url, headers=headers, json=data)
+                if put_res.status_code in [200, 201]:
+                    st.success(f"✅ {db_file} salvato su GitHub")
+                else:
+                    st.error(f"❌ Errore salvando {db_file}: {put_res.status_code}")
+                    st.text(put_res.text)
+            except Exception as e:
+                st.error(f"❌ Errore durante backup di {db_file}: {e}")
+        else:
+            st.warning(f"⚠️ File {db_file} non trovato in locale — nessun backup eseguito.")
 
 # === RESTORE FROM GITHUB===
 
@@ -2287,7 +2289,7 @@ def main():
     st.sidebar.subheader("🧑‍💻.github **Gestione Database**")
 
     if st.sidebar.button("💾 Salva database su GitHub"):
-        backup_to_github()
+        backup_to_github_simple()
         
     last_backup = get_backup_timestamp()
     
@@ -2300,6 +2302,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

@@ -89,55 +89,62 @@ def backup_to_github():
     except Exception as e:
         st.error(f"❌ Errore durante il backup: {e}")
 
-# === RESTORE ===
+# === RESTORE FROM GITHUB===
 
-def restore_from_github():
+def restore_from_github_simple():
+    """
+    🔄 Ripristina i database da GitHub *solo se non presenti in locale*.
+    Usa i parametri di connessione da st.secrets["github"].
+    """
     try:
-        github_token = st.secrets["github"]["token"]
-        repo_name = st.secrets["github"]["repo"]
-        branch_name = st.secrets["github"]["branch"]
+        github_conf = st.secrets["github"]
+        token = github_conf["token"]
+        repo = github_conf["repo"]
+        branch = github_conf.get("branch", "main")
 
-        g = Github(github_token)
-        repo = g.get_repo(repo_name)
+        db_files = ["manutenzioni.db", "login_log.db"]
+        headers = {"Authorization": f"token {token}"}
 
-        db_files = ["login_log.db", "manutenzioni.db"]
         restored = []
 
-        # 🔄 Chiudi tutte le connessioni SQLite aperte
-        import gc
-        for obj in gc.get_objects():
-            if isinstance(obj, sqlite3.Connection):
-                try:
-                    obj.close()
-                except:
-                    pass
-
         for db_file in db_files:
-            try:
-                gh_file = repo.get_contents(db_file, ref=branch_name)
-                content = base64.b64decode(gh_file.content)
-                with open(db_file, "wb") as f:
-                    f.write(content)
-                restored.append(db_file)
-            except Exception as e:
-                st.warning(f"⚠️ File {db_file} non trovato o errore: {e}")
+            if os.path.exists(db_file):
+                st.info(f"✅ {db_file} già presente in locale, nessun download necessario.")
+                continue
+
+            # URL API GitHub per ottenere il file
+            url = f"https://api.github.com/repos/{repo}/contents/{db_file}?ref={branch}"
+            response = requests.get(url, headers=headers)
+
+            if response.status_code == 200:
+                content_json = response.json()
+                encoded_content = content_json.get("content", "")
+                encoding = content_json.get("encoding", "")
+
+                if encoding == "base64" and encoded_content:
+                    # Decodifica e salva localmente
+                    binary_data = base64.b64decode(encoded_content)
+                    with open(db_file, "wb") as f:
+                        f.write(binary_data)
+                    restored.append(db_file)
+                    st.success(f"✅ {db_file} ripristinato da GitHub.")
+                else:
+                    st.warning(f"⚠️ {db_file} trovato ma encoding non valido ({encoding}).")
+            elif response.status_code == 404:
+                st.warning(f"⚠️ {db_file} non trovato nel repo GitHub.")
+            else:
+                st.error(f"❌ Errore GitHub ({response.status_code}): {response.text}")
 
         if restored:
-            st.success(f"✅ Database ripristinati: {', '.join(restored)}")
-            st.cache_data.clear()
-            st.cache_resource.clear()
-            st.toast("♻️ Database ricaricati correttamente.", icon="✅")
-
-            # 💡 Piccolo delay prima del rerun per mantenere la notifica visibile
-            import time
-            time.sleep(1.5)
-            st.rerun()
-
+            st.info(f"✅ Database ripristinati: {', '.join(restored)}")
         else:
-            st.info("⚠️ Nessun database ripristinato da GitHub.")
+            st.warning("⚠️ Nessun database ripristinato (già presenti o non trovati).")
 
+    except KeyError:
+        st.error("❌ Errore: credenziali GitHub non trovate in st.secrets['github'].")
     except Exception as e:
-        st.error(f"❌ Errore durante il ripristino: {e}")
+        st.error(f"❌ Errore imprevisto durante il ripristino: {e}")
+
 
 
 ## FUNZIONI PER SALVATAGGIO E VISUALIZZAZIONE INFO BACKUP TO GITHUB  
@@ -2192,11 +2199,20 @@ def show_impostazioni():
 # --- MAIN APPLICATION (CONTROLLER) ---
 
 def main():
-    # restore_from_github()  # ✅ Prova il ripristino all'avvio
+    # 🔁 Ripristina i database da GitHub solo se mancano in locale
+    restore_from_github_simple()
+
+    # 🧱 Inizializza i database (crea le tabelle se non esistono)
     init_db()
     init_login_log()
+
+    # 🔐 Gestione login
     check_login()
+
+    # 🧪 Opzionale: test connessione GitHub
     # test_github_connection()
+    
+    
     
     
 
@@ -2287,6 +2303,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

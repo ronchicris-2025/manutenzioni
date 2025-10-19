@@ -860,63 +860,44 @@ def show_gestione_manutenzioni():
         # ✅ Riquadro grafico per dati auto-compilati
 
 
-        # Inizializza session_state se necessario
+        import streamlit as st
+
+        # Assicurati che session_state abbia i valori
         for key in ["codice_form", "cap_form", "provincia_form", "regione_form", "lat_form", "lon_form"]:
             if key not in st.session_state:
-                st.session_state[key] = "" if "cap" in key else 0.0
-        
+                st.session_state[key] = "" if "cap" not in key else 0.0
         
         st.markdown("#### 📍 Dati Comune selezionato")
         
-        # Card esterna senza box grigio vuoto
-        st.markdown("""
+        # Card elegante con tutti i valori, incluso CAP, in rosso
+        st.markdown(f"""
         <div style="
             border:2px solid #e0e0e0;
-            padding:10px;
+            padding:15px;
             border-radius:8px;
             background-color:#fefefe;
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.05);
+            width: 100%;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
             font-family: Arial, sans-serif;
         ">
+            <ul style="list-style-type:none; padding-left:0; margin:0; line-height:1.8;">
+                <li><span style='color:#555;'>Codice Comune:</span> <span style='color:red;'>{st.session_state.codice_form}</span></li>
+                <li><span style='color:#555;'>CAP:</span> <span style='color:red;'>{st.session_state.cap_form}</span></li>
+                <li><span style='color:#555;'>Provincia:</span> <span style='color:red;'>{st.session_state.provincia_form}</span></li>
+                <li><span style='color:#555;'>Regione:</span> <span style='color:red;'>{st.session_state.regione_form}</span></li>
+                <li><span style='color:#555;'>Latitudine:</span> <span style='color:red;'>{st.session_state.lat_form:.6f}</span></li>
+                <li><span style='color:#555;'>Longitudine:</span> <span style='color:red;'>{st.session_state.lon_form:.6f}</span></li>
+            </ul>
+        
+            <!-- Campo editabile CAP -->
+            <div style="margin-top:10px;">
+                <label style='color:#555; font-weight:bold;'>Modifica CAP:</label>
+                <br>
+                {st.text_input("", value=st.session_state.cap_form, key="cap_form_editable", label_visibility="collapsed")}
+            </div>
+        </div>
         """, unsafe_allow_html=True)
-        
-        # Lista dei campi: (label, valore, editabile)
-        fields = [
-            ("Codice Comune", st.session_state.codice_form, False),
-            ("CAP", st.session_state.cap_form, True),
-            ("Provincia", st.session_state.provincia_form, False),
-            ("Regione", st.session_state.regione_form, False),
-            ("Latitudine", st.session_state.lat_form, True),
-            ("Longitudine", st.session_state.lon_form, True)
-        ]
-        
-        for label, value, editable in fields:
-            col1, col2 = st.columns([1, 2])
-            with col1:
-                if label == "CAP" and editable:
-                    st.markdown(f"<span style='color:#555; font-weight:bold; font-size:14px;'>{label} (modificabile):</span>", unsafe_allow_html=True)
-                else:
-                    st.markdown(f"<span style='color:#555; font-weight:bold; font-size:14px;'>{label}:</span>", unsafe_allow_html=True)
-            with col2:
-                if editable:
-                    if isinstance(value, float):
-                        st.number_input("", value=value, format="%.6f", key=f"{label}_editable", label_visibility="collapsed", step=0.000001)
-                    else:
-                        st.text_input("", value=value, key=f"{label}_editable", label_visibility="collapsed")
-                else:
-                    st.markdown(f"<span style='color:red; font-size:14px;'>{value}</span>", unsafe_allow_html=True)
-            
-        st.markdown("</div>", unsafe_allow_html=True)
-        
 
-
-
-
-
-
-
-     
-    
         # =======================================================
         # ➕ INSERIMENTO MANUALE PUNTO VENDITA
         # =======================================================
@@ -2416,6 +2397,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

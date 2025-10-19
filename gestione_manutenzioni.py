@@ -862,7 +862,7 @@ def show_gestione_manutenzioni():
             <div style="border:2px solid red; padding:10px; border-radius:8px; background-color:#fff5f5;">
             <h4 style="color:red;">📍 Dati Comune selezionato (auto)</h4>
             </div>
-        """, unsafe_allow_html=True)
+        
         
         with st.form("form_automatica"):
             col1, col2 = st.columns(2)
@@ -876,8 +876,8 @@ def show_gestione_manutenzioni():
                 st.number_input("Latitudine", value=st.session_state.lat_form, format="%.6f", key="lat_form")
                 st.number_input("Longitudine", value=st.session_state.lon_form, format="%.6f", key="lon_form")
 
-        
-        st.markdown("</div>", unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
+        # st.markdown("</div>", unsafe_allow_html=True)
 
     
         # =======================================================
@@ -2379,6 +2379,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

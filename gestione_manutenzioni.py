@@ -884,11 +884,11 @@ def show_gestione_manutenzioni():
                 selected_brand_form = st.selectbox("Seleziona Brand/Formato *", options=brand_list, key="brand_form")
                 punto_vendita = st.text_input("Punto Vendita *", key="punto_vendita_form")
                 indirizzo = st.text_input("Indirizzo *", key="indirizzo_form")
+                note = st.text_area("Note", key="note_form")
             with col2:
                 ultimo_intervento = st.date_input("Data Ultimo Intervento", key="ultimo_intervento_form")
                 prossimo_intervento = st.date_input("Data Prossimo Intervento", key="prossimo_intervento_form")
                 attrezzature = st.text_area("Attrezzature", key="attrezzature_form")
-                note = st.text_area("Note", key="note_form")
                 referente_pv = st.text_input("Referente", key="referente_pv_form")
                 telefono = st.text_input("Telefono", key="telefono_form")
             
@@ -2356,6 +2356,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

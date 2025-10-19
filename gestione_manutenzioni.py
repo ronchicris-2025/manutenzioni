@@ -818,42 +818,18 @@ def show_gestione_manutenzioni():
     with tab2:
         st.subheader("Inserisci un nuovo punto vendita")
     
-        # --- helper: reset dei soli campi della form (definito inline) ---
-        def reset_form_fields():
-            keys_to_reset = [
-                "brand_form", "punto_vendita_form", "indirizzo_form",
-                "ultimo_intervento_form", "prossimo_intervento_form",
-                "attrezzature_form", "note_form", "referente_pv_form", "telefono_form"
-            ]
-            # assegna valori coerenti: stringhe vuote o date/valori di default
-            for k in keys_to_reset:
-                if k not in st.session_state:
-                    continue
-                if k in ("ultimo_intervento_form", "prossimo_intervento_form"):
-                    st.session_state[k] = datetime.date.today()
-                else:
-                    st.session_state[k] = ""
-    
-        # --- Caricamento dati comuni e brands (se non già caricati esternamente) ---
+        # --- Caricamento comuni ---
         df_comuni = load_data("comuni")
         comuni_list = df_comuni['comune'].tolist()
     
-        # brand_list dovrebbe già esistere; se no lo carichiamo qui
-        try:
-            brand_list  # noqa: F821
-        except NameError:
-            df_brands = load_data("format")
-            brand_list = df_brands['brand'].tolist()
-    
-        # --- Selectbox per la città ---
         selected_comune = st.selectbox(
-            "Seleziona Città *",
+            "Seleziona Città *", 
             options=[""] + comuni_list,
             key="citta_select_reactive",
             help="Selezionando una città, i campi sottostanti verranno compilati automaticamente."
         )
     
-        # --- Inizializza i campi auto se non esistono in session_state ---
+        # --- Inizializza session_state ---
         for field, default in {
             "codice": "",
             "cap": "",
@@ -862,31 +838,25 @@ def show_gestione_manutenzioni():
             "lat": 0.0,
             "lon": 0.0
         }.items():
-            key = f"{field}_form"
-            if key not in st.session_state:
-                st.session_state[key] = default
+            if f"{field}_form" not in st.session_state:
+                st.session_state[f"{field}_form"] = default
     
-        # Mantieni memoria ultimo CAP auto per rilevare se l'utente ha sovrascritto
-        if "last_auto_cap" not in st.session_state:
-            st.session_state["last_auto_cap"] = ""
-    
-        # --- Aggiorna campi auto se è stata selezionata una città ---
+        # --- Aggiorna dati auto se selezionato un comune ---
         if selected_comune:
             city_data = df_comuni[df_comuni['comune'] == selected_comune]
             if not city_data.empty:
-                st.session_state["codice_form"] = city_data['codice'].iloc[0]
-                st.session_state["provincia_form"] = city_data['provincia'].iloc[0]
-                st.session_state["regione_form"] = city_data['regione'].iloc[0]
-                st.session_state["lat_form"] = float(city_data['lat'].iloc[0])
-                st.session_state["lon_form"] = float(city_data['lon'].iloc[0])
-                # aggiorna il CAP solo se è vuoto o corrisponde all'ultimo CAP auto
-                auto_cap_value = str(city_data['cap'].iloc[0])
-                if not st.session_state.get("cap_form") or st.session_state.get("cap_form") == st.session_state.get("last_auto_cap", ""):
-                    st.session_state["cap_form"] = auto_cap_value
-                    st.session_state["last_auto_cap"] = auto_cap_value
+                st.session_state.codice_form = city_data['codice'].iloc[0]
+                st.session_state.provincia_form = city_data['provincia'].iloc[0]
+                st.session_state.regione_form = city_data['regione'].iloc[0]
+                st.session_state.lat_form = float(city_data['lat'].iloc[0])
+                st.session_state.lon_form = float(city_data['lon'].iloc[0])
+                if not st.session_state.cap_form or st.session_state.cap_form == st.session_state.get("last_auto_cap", ""):
+                    st.session_state.cap_form = str(city_data['cap'].iloc[0])
+                    st.session_state.last_auto_cap = st.session_state.cap_form
     
-        # -----------------------------
-        # Riquadro rosso: dati auto-compilati (titolo fuori dalla cornice)
+        # =======================================================
+        # 📍 DATI AUTO-COMPILATI
+        # =======================================================
         st.markdown("#### 📍 Dati Comune selezionato (auto)")
         st.markdown("""
             <div style="
@@ -894,131 +864,101 @@ def show_gestione_manutenzioni():
                 padding: 12px;
                 border-radius: 8px;
                 background-color: #fff6f6;
-                margin-bottom: 10px;
+                margin-bottom: 20px;
             ">
         """, unsafe_allow_html=True)
     
-        # Usa colonne per disporre i campi
         col1, col2 = st.columns(2)
         with col1:
             st.markdown('<span style="color:#cc0000; font-weight:600;">Codice Comune</span>', unsafe_allow_html=True)
-            st.text_input("", key="codice_form", disabled=True, label_visibility="collapsed")
+            st.text_input("", value=st.session_state.codice_form, disabled=True, label_visibility="collapsed")
     
             st.markdown('<span style="color:#cc0000; font-weight:600;">CAP (modificabile)</span>', unsafe_allow_html=True)
-            st.text_input("", key="cap_form", label_visibility="collapsed")  # campo editabile
+            st.text_input("", value=st.session_state.cap_form, key="cap_form", label_visibility="collapsed")
     
             st.markdown('<span style="color:#cc0000; font-weight:600;">Provincia</span>', unsafe_allow_html=True)
-            st.text_input("", key="provincia_form", disabled=True, label_visibility="collapsed")
+            st.text_input("", value=st.session_state.provincia_form, disabled=True, label_visibility="collapsed")
     
             st.markdown('<span style="color:#cc0000; font-weight:600;">Regione</span>', unsafe_allow_html=True)
-            st.text_input("", key="regione_form", disabled=True, label_visibility="collapsed")
+            st.text_input("", value=st.session_state.regione_form, disabled=True, label_visibility="collapsed")
     
         with col2:
             st.markdown('<span style="color:#cc0000; font-weight:600;">Latitudine</span>', unsafe_allow_html=True)
-            st.number_input("", key="lat_form", format="%.6f", label_visibility="collapsed")
+            st.number_input("", value=st.session_state.lat_form, format="%.6f", key="lat_form", label_visibility="collapsed")
     
             st.markdown('<span style="color:#cc0000; font-weight:600;">Longitudine</span>', unsafe_allow_html=True)
-            st.number_input("", key="lon_form", format="%.6f", label_visibility="collapsed")
+            st.number_input("", value=st.session_state.lon_form, format="%.6f", key="lon_form", label_visibility="collapsed")
     
-        # chiusura riquadro rosso (markup)
         st.markdown("</div>", unsafe_allow_html=True)
     
-        # -----------------------------
-        # Titolo e riquadro per la form (titolo fuori dalla cornice come richiesto)
+        # =======================================================
+        # ➕ INSERIMENTO MANUALE PUNTO VENDITA
+        # =======================================================
         st.markdown("#### ➕ Inserimento manuale punto vendita")
         st.markdown("""
             <div style="
-                border: 2px solid #e0e0e0;
-                padding: 12px;
-                border-radius: 8px;
-                background-color: #ffffff;
-                margin-bottom: 10px;
+                border:2px solid #e0e0e0;
+                padding:15px;
+                border-radius:8px;
+                background-color:#fefefe;
             ">
         """, unsafe_allow_html=True)
     
-        # --- FORM vero e proprio ---
         with st.form("form_manuale"):
             col1, col2 = st.columns(2)
             with col1:
-                # brand, punto vendita, indirizzo, note
-                st.selectbox("Seleziona Brand/Formato *", options=brand_list, key="brand_form")
-                st.text_input("Punto Vendita *", key="punto_vendita_form")
-                st.text_input("Indirizzo *", key="indirizzo_form")
-                st.text_area("Note", key="note_form", height=90)
+                selected_brand_form = st.selectbox("Seleziona Brand/Formato *", options=brand_list, key="brand_form")
+                punto_vendita = st.text_input("Punto Vendita *", key="punto_vendita_form")
+                indirizzo = st.text_input("Indirizzo *", key="indirizzo_form")
+                note = st.text_area("Note", key="note_form")
+    
             with col2:
-                st.date_input("Data Ultimo Intervento", key="ultimo_intervento_form")
-                st.date_input("Data Prossimo Intervento", key="prossimo_intervento_form")
-                st.text_area("Attrezzature", key="attrezzature_form", height=90)
-                st.text_input("Referente", key="referente_pv_form")
-                st.text_input("Telefono", key="telefono_form")
+                ultimo_intervento = st.date_input("Data Ultimo Intervento", key="ultimo_intervento_form")
+                prossimo_intervento = st.date_input("Data Prossimo Intervento", key="prossimo_intervento_form")
+                attrezzature = st.text_area("Attrezzature", key="attrezzature_form")
+                referente_pv = st.text_input("Referente", key="referente_pv_form")
+                telefono = st.text_input("Telefono", key="telefono_form")
     
-            # spazio verticale prima bottoni
-            st.markdown("<div style='margin:18px 0;'></div>", unsafe_allow_html=True)
+            # Pulsanti centrati e distanziati
+            st.markdown("<div style='margin:30px 0;'></div>", unsafe_allow_html=True)
+            col1, col2, col3 = st.columns([1, 2, 1])
+            with col2:
+                st.form_submit_button("🔄 Resetta dati Form", on_click=lambda: reset_form_fields())
+                st.markdown("<div style='margin:20px 0;'></div>", unsafe_allow_html=True)
+                submitted = st.form_submit_button("🔒 CONFERMA INSERIMENTO", type="primary")
     
-            # bottoni centrati e con spazio maggiore tra loro
-            col_left, col_center, col_right = st.columns([1, 2, 1])
-            with col_center:
-                # Reset form (usa on_click per azione immediata e non chiudere/sottomettere)
-                reset_clicked = st.form_submit_button("🔄 Resetta dati Form", use_container_width=False, on_click=reset_form_fields)
-                st.markdown("<div style='height:14px'></div>", unsafe_allow_html=True)  # maggiore spazio
-                submit_clicked = st.form_submit_button("🔒 CONFERMA INSERIMENTO", type="primary", use_container_width=False)
+            # --- Azione di inserimento nel DB ---
+            if submitted:
+                if not selected_brand_form or not punto_vendita or not indirizzo or not selected_comune:
+                    st.error("Compila i campi obbligatori contrassegnati con *")
+                else:
+                    conn = get_connection()
+                    cursor = conn.cursor()
+                    try:
+                        cursor.execute(f'''
+                            INSERT INTO manutenzioni ({", ".join(MANUTENZIONI_COLUMNS)})
+                            VALUES ({", ".join(["?"]*len(MANUTENZIONI_COLUMNS))})
+                        ''', (
+                            punto_vendita, indirizzo, st.session_state.cap_form,
+                            selected_comune, st.session_state.provincia_form,
+                            st.session_state.regione_form, ultimo_intervento,
+                            prossimo_intervento, attrezzature, note,
+                            st.session_state.lat_form, st.session_state.lon_form,
+                            st.session_state.codice_form, selected_brand_form,
+                            referente_pv, telefono
+                        ))
+                        conn.commit()
+                        st.success("✅ Nuova attività aggiunta con successo!")
+                        st.toast("Attività inserita!", icon="✅")
+                        st.session_state.reset_form_flag = True
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Errore durante l'inserimento: {e}")
+                    finally:
+                        conn.close()
     
-        # chiusura riquadro grigio
         st.markdown("</div>", unsafe_allow_html=True)
-    
-        # --- Gestione submit (fuori dal with st.form) ---
-        if submit_clicked:
-            # leggi i valori necessari
-            selected_brand_form = st.session_state.get("brand_form", "")
-            punto_vendita = st.session_state.get("punto_vendita_form", "")
-            indirizzo = st.session_state.get("indirizzo_form", "")
-            ultimo_intervento = st.session_state.get("ultimo_intervento_form", datetime.date.today())
-            prossimo_intervento = st.session_state.get("prossimo_intervento_form", datetime.date.today())
-            attrezzature = st.session_state.get("attrezzature_form", "")
-            note = st.session_state.get("note_form", "")
-            referente_pv = st.session_state.get("referente_pv_form", "")
-            telefono = st.session_state.get("telefono_form", "")
-    
-            if not selected_brand_form or not punto_vendita or not indirizzo or not selected_comune:
-                st.error("Compila i campi obbligatori contrassegnati con *")
-            else:
-                conn = get_connection()
-                cursor = conn.cursor()
-                try:
-                    cursor.execute(f'''
-                        INSERT INTO manutenzioni ({", ".join(MANUTENZIONI_COLUMNS)})
-                        VALUES ({", ".join(["?"]*len(MANUTENZIONI_COLUMNS))})
-                    ''', (
-                        punto_vendita,
-                        indirizzo,
-                        st.session_state.get("cap_form", ""),
-                        selected_comune,
-                        st.session_state.get("provincia_form", ""),
-                        st.session_state.get("regione_form", ""),
-                        ultimo_intervento,
-                        prossimo_intervento,
-                        attrezzature,
-                        note,
-                        st.session_state.get("lat_form", 0.0),
-                        st.session_state.get("lon_form", 0.0),
-                        st.session_state.get("codice_form", ""),
-                        selected_brand_form,
-                        referente_pv,
-                        telefono
-                    ))
-                    conn.commit()
-                    st.success("✅ Nuova attività aggiunta con successo!")
-                    st.toast("Attività inserita!", icon="✅")
-    
-                    # reset solo dei campi della form (lascia i campi auto-compilati intatti)
-                    reset_form_fields()
-                    # se vuoi azzerare anche la select della città: st.session_state["citta_select_reactive"] = ""
-                    st.rerun()
-    
-                except Exception as e:
-                    st.error(f"Errore durante l'inserimento: {e}")
-                finally:
-                    conn.close()
+
 
 
 
@@ -2450,6 +2390,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

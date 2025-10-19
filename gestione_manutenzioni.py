@@ -864,7 +864,7 @@ def show_gestione_manutenzioni():
             if key not in st.session_state:
                 st.session_state[key] = "" if "cap" not in key else 0.0
         
-        st.header("🏛 Gestione Punti Vendita")
+        #st.header("🏛 Gestione Punti Vendita")
         st.markdown("#### 📍 Dati Comune selezionato")
         
         # Card esterna in HTML
@@ -2406,6 +2406,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

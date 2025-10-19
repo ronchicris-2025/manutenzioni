@@ -857,7 +857,6 @@ def show_gestione_manutenzioni():
         # =======================================================
         # 📍 DATI AUTO-COMPILATI
         # =======================================================
-        st.markdown("#### 📍 Dati Comune selezionato (auto)")
         # ✅ Riquadro grafico per dati auto-compilati
         st.markdown("""
             <div style="border:2px solid red; padding:10px; border-radius:8px; background-color:#fff5f5;">
@@ -2380,6 +2379,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

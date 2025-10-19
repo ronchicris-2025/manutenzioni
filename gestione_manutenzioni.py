@@ -880,6 +880,7 @@ def show_gestione_manutenzioni():
         ">
             <ul style="list-style-type:none; padding-left:0; margin:0; line-height:1.8;">
                 <li><span style='color:#555;'>Codice Comune:</span> <span style='color:red;'>{st.session_state.codice_form}</span></li>
+                <li><span style='color:#555;'>CAP:</span> <span style='color:red;'>{st.session_state.cap_form}</span></li>
                 <li><span style='color:#555;'>Provincia:</span> <span style='color:red;'>{st.session_state.provincia_form}</span></li>
                 <li><span style='color:#555;'>Regione:</span> <span style='color:red;'>{st.session_state.regione_form}</span></li>
                 <li><span style='color:#555;'>Latitudine:</span> <span style='color:red;'>{st.session_state.lat_form:.6f}</span></li>
@@ -2394,6 +2395,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

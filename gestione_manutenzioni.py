@@ -859,15 +859,16 @@ def show_gestione_manutenzioni():
         # =======================================================
         # ✅ Riquadro grafico per dati auto-compilati
 
-        # Inizializza session_state
+
+        # Inizializza session_state se necessario
         for key in ["codice_form", "cap_form", "provincia_form", "regione_form", "lat_form", "lon_form"]:
             if key not in st.session_state:
-                st.session_state[key] = "" if "cap" not in key else 0.0
+                st.session_state[key] = "" if "cap" in key else 0.0
         
-        #st.header("🏛 Gestione Punti Vendita")
+        st.header("🏛 Gestione Punti Vendita")
         st.markdown("#### 📍 Dati Comune selezionato")
         
-        # Card esterna in HTML
+        # Card esterna
         st.markdown("""
         <div style="
             border:2px solid #e0e0e0;
@@ -879,26 +880,40 @@ def show_gestione_manutenzioni():
         ">
         """, unsafe_allow_html=True)
         
-        col1, col2 = st.columns([1, 1])
+        # Lista dei campi: (label, valore, editabile)
+        fields = [
+            ("Codice Comune", st.session_state.codice_form, False),
+            ("CAP", st.session_state.cap_form, True),
+            ("Provincia", st.session_state.provincia_form, False),
+            ("Regione", st.session_state.regione_form, False),
+            ("Latitudine", st.session_state.lat_form, True),
+            ("Longitudine", st.session_state.lon_form, True)
+        ]
         
-        with col1:
-            st.markdown("<span style='color:#555; font-weight:bold;'>Codice Comune:</span>", unsafe_allow_html=True)
-            st.markdown("<span style='color:#555; font-weight:bold;'>CAP (modificabile):</span>", unsafe_allow_html=True)
-            st.markdown("<span style='color:#555; font-weight:bold;'>Provincia:</span>", unsafe_allow_html=True)
-            st.markdown("<span style='color:#555; font-weight:bold;'>Regione:</span>", unsafe_allow_html=True)
-            st.markdown("<span style='color:#555; font-weight:bold;'>Latitudine:</span>", unsafe_allow_html=True)
-            st.markdown("<span style='color:#555; font-weight:bold;'>Longitudine:</span>", unsafe_allow_html=True)
-        
-        with col2:
-            st.markdown(f"<span style='color:red;'>{st.session_state.codice_form}</span>", unsafe_allow_html=True)
-            st.text_input("", value=st.session_state.cap_form, key="cap_form_editable", label_visibility="collapsed")
-            st.markdown(f"<span style='color:red;'>{st.session_state.provincia_form}</span>", unsafe_allow_html=True)
-            st.markdown(f"<span style='color:red;'>{st.session_state.regione_form}</span>", unsafe_allow_html=True)
-            st.number_input("", value=st.session_state.lat_form, format="%.6f", key="lat_form_editable", label_visibility="collapsed")
-            st.number_input("", value=st.session_state.lon_form, format="%.6f", key="lon_form_editable", label_visibility="collapsed")
+        for idx, (label, value, editable) in enumerate(fields):
+            col1, col2 = st.columns([1, 2])
+            with col1:
+                # Etichetta con colore grigio e bold
+                if label == "CAP" and editable:
+                    st.markdown(f"<span style='color:#555; font-weight:bold;'>{label} (modificabile):</span>", unsafe_allow_html=True)
+                else:
+                    st.markdown(f"<span style='color:#555; font-weight:bold;'>{label}:</span>", unsafe_allow_html=True)
+            with col2:
+                if editable:
+                    if isinstance(value, float):
+                        st.number_input("", value=value, format="%.6f", key=f"{label}_editable", label_visibility="collapsed")
+                    else:
+                        st.text_input("", value=value, key=f"{label}_editable", label_visibility="collapsed")
+                else:
+                    st.markdown(f"<span style='color:red;'>{value}</span>", unsafe_allow_html=True)
+            
+            # Separatore tra righe tranne l'ultima
+            if idx < len(fields)-1:
+                st.markdown("<hr style='margin:2px 0; border-color:#e0e0e0;'>", unsafe_allow_html=True)
         
         # Chiudi card
         st.markdown("</div>", unsafe_allow_html=True)
+
 
 
 
@@ -2406,6 +2421,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

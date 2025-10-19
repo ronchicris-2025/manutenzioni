@@ -864,17 +864,17 @@ def show_gestione_manutenzioni():
             </div>
         """, unsafe_allow_html=True)
         
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.markdown(f"**<span style='color:red;'>Codice Comune:</span>**<br>{st.session_state.codice_form}", unsafe_allow_html=True)
-            st.text_input("CAP (modificabile)", value=st.session_state.cap_form, key="cap_form")
-            st.markdown(f"**<span style='color:red;'>Provincia:</span>**<br>{st.session_state.provincia_form}", unsafe_allow_html=True)
-            st.markdown(f"**<span style='color:red;'>Regione:</span>**<br>{st.session_state.regione_form}", unsafe_allow_html=True)
-        
-        with col2:
-            st.number_input("Latitudine", value=st.session_state.lat_form, format="%.6f", key="lat_form")
-            st.number_input("Longitudine", value=st.session_state.lon_form, format="%.6f", key="lon_form")
+        with st.form("form_automatica"):
+            col1, col2 = st.columns(2)
+            with col1:
+                st.markdown(f"**<span style='color:red;'>Codice Comune:</span>**<br>{st.session_state.codice_form}", unsafe_allow_html=True)
+                st.text_input("CAP (modificabile)", value=st.session_state.cap_form, key="cap_form")
+                st.markdown(f"**<span style='color:red;'>Provincia:</span>**<br>{st.session_state.provincia_form}", unsafe_allow_html=True)
+                st.markdown(f"**<span style='color:red;'>Regione:</span>**<br>{st.session_state.regione_form}", unsafe_allow_html=True)
+            
+            with col2:
+                st.number_input("Latitudine", value=st.session_state.lat_form, format="%.6f", key="lat_form")
+                st.number_input("Longitudine", value=st.session_state.lon_form, format="%.6f", key="lon_form")
 
         
         st.markdown("</div>", unsafe_allow_html=True)
@@ -2379,6 +2379,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

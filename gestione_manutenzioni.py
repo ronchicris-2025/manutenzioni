@@ -858,32 +858,29 @@ def show_gestione_manutenzioni():
         # 📍 DATI AUTO-COMPILATI
         # =======================================================
         # ✅ Riquadro grafico per dati auto-compilati
-      
-        st.markdown("#### 📍 Dati Comune selezionato ")
-        st.markdown("""
-            <div style="
-                border:2px solid #e0e0e0;
-                padding:15px;
-                border-radius:8px;
-                background-color:#fefefe;
-            ">
-        """, unsafe_allow_html=True)
-        st.form(key, clear_on_submit=False, *, enter_to_submit=True, border=True, width="stretch", height="content")
-        col1, col2 = st.columns(2)
 
-        with col1:
-            st.markdown(f"**<span style='color:red;'>Codice Comune:</span>**<br>{st.session_state.codice_form}", unsafe_allow_html=True)
-            st.text_input("CAP (modificabile)", value=st.session_state.cap_form, key="cap_form")
-            st.markdown(f"**<span style='color:red;'>Provincia:</span>**<br>{st.session_state.provincia_form}", unsafe_allow_html=True)
-            st.markdown(f"**<span style='color:red;'>Regione:</span>**<br>{st.session_state.regione_form}", unsafe_allow_html=True)
+        st.markdown("#### 📍 Dati Comune selezionato")
         
-        with col2:
-            st.number_input("Latitudine", value=st.session_state.lat_form, format="%.6f", key="lat_form")
-            st.number_input("Longitudine", value=st.session_state.lon_form, format="%.6f", key="lon_form")
-      
-     
-        # st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown(f"""
+        <div style="
+            border:2px solid #e0e0e0;
+            padding:15px;
+            border-radius:8px;
+            background-color:#fefefe;
+            width: 100%;
+        ">
+            <ul style="list-style-type:none; padding-left:0;">
+                <li><strong style='color:red;'>Codice Comune:</strong> {st.session_state.codice_form}</li>
+                <li><strong style='color:red;'>CAP:</strong> {st.session_state.cap_form}</li>
+                <li><strong style='color:red;'>Provincia:</strong> {st.session_state.provincia_form}</li>
+                <li><strong style='color:red;'>Regione:</strong> {st.session_state.regione_form}</li>
+                <li><strong style='color:red;'>Latitudine:</strong> {st.session_state.lat_form:.6f}</li>
+                <li><strong style='color:red;'>Longitudine:</strong> {st.session_state.lon_form:.6f}</li>
+            </ul>
+        </div>
+        """, unsafe_allow_html=True)
 
+     
     
         # =======================================================
         # ➕ INSERIMENTO MANUALE PUNTO VENDITA
@@ -2384,6 +2381,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

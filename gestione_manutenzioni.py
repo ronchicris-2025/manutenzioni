@@ -868,6 +868,7 @@ def show_gestione_manutenzioni():
                 background-color:#fefefe;
             ">
         """, unsafe_allow_html=True)
+        st.form("form_auto"):
         col1, col2 = st.columns(2)
 
         with col1:
@@ -2383,6 +2384,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

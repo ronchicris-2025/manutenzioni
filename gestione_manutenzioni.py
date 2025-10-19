@@ -898,7 +898,11 @@ def show_gestione_manutenzioni():
                 
                 # Bottone Aggiungi
                 submitted = st.form_submit_button("🔒 CONFERMA INSERIMENTO", type="primary")
-    
+            with st.container():
+            st.markdown(
+                "<hr style='border: 1px solid #bbb; margin: 10px 0;'>",
+                unsafe_allow_html=True
+            )
             if submitted:
                 if not selected_brand_form or not punto_vendita or not indirizzo or not selected_comune:
                     st.error("Compila i campi obbligatori contrassegnati con *")
@@ -2355,6 +2359,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

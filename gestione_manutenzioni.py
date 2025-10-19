@@ -867,29 +867,65 @@ def show_gestione_manutenzioni():
                 margin-bottom: 20px;
             ">
         """, unsafe_allow_html=True)
-    
+        
         col1, col2 = st.columns(2)
         with col1:
             st.markdown('<span style="color:#cc0000; font-weight:600;">Codice Comune</span>', unsafe_allow_html=True)
-            st.text_input("", value=st.session_state.codice_form, disabled=True, label_visibility="collapsed")
-    
+            st.text_input(
+                "",
+                value=st.session_state.get("codice_form", "") or "",
+                key="codice_form_display",
+                disabled=True,
+                label_visibility="collapsed"
+            )
+        
             st.markdown('<span style="color:#cc0000; font-weight:600;">CAP (modificabile)</span>', unsafe_allow_html=True)
-            st.text_input("", value=st.session_state.cap_form, key="cap_form", label_visibility="collapsed")
-    
+            st.text_input(
+                "",
+                value=st.session_state.get("cap_form", "") or "",
+                key="cap_form",
+                label_visibility="collapsed"
+            )
+        
             st.markdown('<span style="color:#cc0000; font-weight:600;">Provincia</span>', unsafe_allow_html=True)
-            st.text_input("", value=st.session_state.provincia_form, disabled=True, label_visibility="collapsed")
-    
+            st.text_input(
+                "",
+                value=st.session_state.get("provincia_form", "") or "",
+                key="provincia_form_display",
+                disabled=True,
+                label_visibility="collapsed"
+            )
+        
             st.markdown('<span style="color:#cc0000; font-weight:600;">Regione</span>', unsafe_allow_html=True)
-            st.text_input("", value=st.session_state.regione_form, disabled=True, label_visibility="collapsed")
-    
+            st.text_input(
+                "",
+                value=st.session_state.get("regione_form", "") or "",
+                key="regione_form_display",
+                disabled=True,
+                label_visibility="collapsed"
+            )
+        
         with col2:
             st.markdown('<span style="color:#cc0000; font-weight:600;">Latitudine</span>', unsafe_allow_html=True)
-            st.number_input("", value=st.session_state.lat_form, format="%.6f", key="lat_form", label_visibility="collapsed")
-    
+            st.number_input(
+                "",
+                value=float(st.session_state.get("lat_form", 0.0) or 0.0),
+                format="%.6f",
+                key="lat_form",
+                label_visibility="collapsed"
+            )
+        
             st.markdown('<span style="color:#cc0000; font-weight:600;">Longitudine</span>', unsafe_allow_html=True)
-            st.number_input("", value=st.session_state.lon_form, format="%.6f", key="lon_form", label_visibility="collapsed")
-    
+            st.number_input(
+                "",
+                value=float(st.session_state.get("lon_form", 0.0) or 0.0),
+                format="%.6f",
+                key="lon_form",
+                label_visibility="collapsed"
+            )
+        
         st.markdown("</div>", unsafe_allow_html=True)
+
     
         # =======================================================
         # ➕ INSERIMENTO MANUALE PUNTO VENDITA
@@ -2390,6 +2426,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

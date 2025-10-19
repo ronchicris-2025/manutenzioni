@@ -859,37 +859,36 @@ def show_gestione_manutenzioni():
         # =======================================================
         # ✅ Riquadro grafico per dati auto-compilati
 
-        import streamlit as st
+        
 
+        # Assicurati che session_state abbia i valori
+        for key in ["codice_form", "cap_form", "provincia_form", "regione_form", "lat_form", "lon_form"]:
+            if key not in st.session_state:
+                st.session_state[key] = "" if "cap" not in key else 0.0
+        
         st.markdown("#### 📍 Dati Comune selezionato")
         
-        # Inizio del contenitore (card)
-        st.markdown("""
+        # Card con dati statici
+        st.markdown(f"""
         <div style="
             border:2px solid #e0e0e0;
             padding:15px;
             border-radius:8px;
             background-color:#fefefe;
-            width: 100%;
         ">
+            <ul style="list-style-type:none; padding-left:0;">
+                <li><strong style='color:red;'>Codice Comune:</strong> {st.session_state.codice_form}</li>
+                <li><strong style='color:red;'>Provincia:</strong> {st.session_state.provincia_form}</li>
+                <li><strong style='color:red;'>Regione:</strong> {st.session_state.regione_form}</li>
+                <li><strong style='color:red;'>Latitudine:</strong> {st.session_state.lat_form:.6f}</li>
+                <li><strong style='color:red;'>Longitudine:</strong> {st.session_state.lon_form:.6f}</li>
+            </ul>
+        </div>
         """, unsafe_allow_html=True)
         
-        # Elenco dati statici
-        st.markdown(f"""
-        <ul style="list-style-type:none; padding-left:0;">
-            <li><strong style='color:red;'>Codice Comune:</strong> {st.session_state.codice_form}</li>
-            <li><strong style='color:red;'>Provincia:</strong> {st.session_state.provincia_form}</li>
-            <li><strong style='color:red;'>Regione:</strong> {st.session_state.regione_form}</li>
-            <li><strong style='color:red;'>Latitudine:</strong> {st.session_state.lat_form:.6f}</li>
-            <li><strong style='color:red;'>Longitudine:</strong> {st.session_state.lon_form:.6f}</li>
-        </ul>
-        """, unsafe_allow_html=True)
-        
-        # Campo editabile fuori dal Markdown ma dentro la card
+        # Campo editabile (CAP) fuori dal Markdown, ma dentro la card visivamente
         st.text_input("CAP (modificabile)", value=st.session_state.cap_form, key="cap_form")
-        
-        # Chiusura del contenitore
-        st.markdown("</div>", unsafe_allow_html=True)
+
 
 
      
@@ -2393,6 +2392,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

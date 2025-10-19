@@ -892,7 +892,7 @@ with col2:
     st.markdown("</div>", unsafe_allow_html=True)  # chiusura riquadro rosso
     
         # ➕ Titolo sezione form manuale
-        st.markdown("#### ➕ Inserimento manuale punto vendita")
+    st.markdown("#### ➕ Inserimento manuale punto vendita")
         
         # ✅ Riquadro per form manuale
         st.markdown("""
@@ -2387,6 +2387,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

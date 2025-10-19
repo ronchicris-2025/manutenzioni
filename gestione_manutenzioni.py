@@ -888,14 +888,14 @@ def show_gestione_manutenzioni():
         # ➕ INSERIMENTO MANUALE PUNTO VENDITA
         # =======================================================
         st.markdown("#### ➕ Inserimento manuale punto vendita")
-        st.markdown("""
-            <div style="
-                border:2px solid #e0e0e0;
-                padding:15px;
-                border-radius:8px;
-                background-color:#fefefe;
-            ">
-        """, unsafe_allow_html=True)
+        #st.markdown("""
+         #   <div style="
+          #      border:2px solid #e0e0e0;
+           #     padding:15px;
+            #    border-radius:8px;
+             #   background-color:#fefefe;
+           # ">
+        #""", unsafe_allow_html=True)
     
         with st.form("form_manuale"):
             col1, col2 = st.columns(2)
@@ -2383,6 +2383,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

@@ -872,38 +872,39 @@ def show_gestione_manutenzioni():
         with col1:
             st.markdown('<span style="color:#cc0000; font-weight:600;">Codice Comune</span>', unsafe_allow_html=True)
             st.text_input(
-                "",
+                "Codice Comune",
                 value=st.session_state.get("codice_form", "") or "",
                 key="codice_form_display",
                 disabled=True,
-                label_visibility="collapsed"
+                label_visibility="visible"
             )
         
             st.markdown('<span style="color:#cc0000; font-weight:600;">CAP (modificabile)</span>', unsafe_allow_html=True)
             st.text_input(
-                "",
+                "CAP",
                 value=st.session_state.get("cap_form", "") or "",
                 key="cap_form",
-                label_visibility="collapsed"
+                label_visibility="visible"
             )
         
             st.markdown('<span style="color:#cc0000; font-weight:600;">Provincia</span>', unsafe_allow_html=True)
             st.text_input(
-                "",
+                "Provincia",
                 value=st.session_state.get("provincia_form", "") or "",
                 key="provincia_form_display",
                 disabled=True,
-                label_visibility="collapsed"
+                label_visibility="visible"
             )
         
             st.markdown('<span style="color:#cc0000; font-weight:600;">Regione</span>', unsafe_allow_html=True)
             st.text_input(
-                "",
+                "Regione",
                 value=st.session_state.get("regione_form", "") or "",
                 key="regione_form_display",
                 disabled=True,
-                label_visibility="collapsed"
+                label_visibility="visible"
             )
+
         
         with col2:
             st.markdown('<span style="color:#cc0000; font-weight:600;">Latitudine</span>', unsafe_allow_html=True)
@@ -2426,6 +2427,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

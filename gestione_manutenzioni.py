@@ -859,24 +859,21 @@ def show_gestione_manutenzioni():
         # =======================================================
         # ✅ Riquadro grafico per dati auto-compilati
 
-
-        import streamlit as st
-
-        # Inizializza session_state se necessario
+        # Inizializza session_state
         for key in ["codice_form", "cap_form", "provincia_form", "regione_form", "lat_form", "lon_form"]:
             if key not in st.session_state:
                 st.session_state[key] = "" if "cap" not in key else 0.0
         
+        st.header("🏛 Gestione Punti Vendita")
         st.markdown("#### 📍 Dati Comune selezionato")
         
-        # Card con colonne interne
+        # Card esterna in HTML
         st.markdown("""
         <div style="
             border:2px solid #e0e0e0;
             padding:15px;
             border-radius:8px;
             background-color:#fefefe;
-            width: 100%;
             box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
             font-family: Arial, sans-serif;
         ">
@@ -894,14 +891,15 @@ def show_gestione_manutenzioni():
         
         with col2:
             st.markdown(f"<span style='color:red;'>{st.session_state.codice_form}</span>", unsafe_allow_html=True)
-            # CAP editabile accanto all'etichetta "modificabile"
             st.text_input("", value=st.session_state.cap_form, key="cap_form_editable", label_visibility="collapsed")
             st.markdown(f"<span style='color:red;'>{st.session_state.provincia_form}</span>", unsafe_allow_html=True)
             st.markdown(f"<span style='color:red;'>{st.session_state.regione_form}</span>", unsafe_allow_html=True)
             st.number_input("", value=st.session_state.lat_form, format="%.6f", key="lat_form_editable", label_visibility="collapsed")
             st.number_input("", value=st.session_state.lon_form, format="%.6f", key="lon_form_editable", label_visibility="collapsed")
         
+        # Chiudi card
         st.markdown("</div>", unsafe_allow_html=True)
+
 
 
 
@@ -2408,6 +2406,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

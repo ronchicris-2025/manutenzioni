@@ -860,8 +860,6 @@ def show_gestione_manutenzioni():
         # ✅ Riquadro grafico per dati auto-compilati
 
 
-      import streamlit as st
-
         # Assicurati che session_state abbia i valori
         for key in ["codice_form", "cap_form", "provincia_form", "regione_form", "lat_form", "lon_form"]:
             if key not in st.session_state:
@@ -2398,6 +2396,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

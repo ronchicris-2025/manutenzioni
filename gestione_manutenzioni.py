@@ -895,7 +895,8 @@ def show_gestione_manutenzioni():
             </div>
         </div>
         """, unsafe_allow_html=True)
-
+        # Campo editabile (CAP) separato ma dentro la card
+        st.text_input("CAP (modificabile)", value=st.session_state.cap_form, key="cap_form")
 
         # =======================================================
         # ➕ INSERIMENTO MANUALE PUNTO VENDITA
@@ -2396,6 +2397,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

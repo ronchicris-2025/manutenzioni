@@ -860,6 +860,8 @@ def show_gestione_manutenzioni():
         # ✅ Riquadro grafico per dati auto-compilati
 
 
+        import streamlit as st
+
         # Inizializza session_state se necessario
         for key in ["codice_form", "cap_form", "provincia_form", "regione_form", "lat_form", "lon_form"]:
             if key not in st.session_state:
@@ -884,7 +886,7 @@ def show_gestione_manutenzioni():
         
         with col1:
             st.markdown("<span style='color:#555; font-weight:bold;'>Codice Comune:</span>", unsafe_allow_html=True)
-            st.markdown("<span style='color:#555; font-weight:bold;'>CAP:</span>", unsafe_allow_html=True)
+            st.markdown("<span style='color:#555; font-weight:bold;'>CAP (modificabile):</span>", unsafe_allow_html=True)
             st.markdown("<span style='color:#555; font-weight:bold;'>Provincia:</span>", unsafe_allow_html=True)
             st.markdown("<span style='color:#555; font-weight:bold;'>Regione:</span>", unsafe_allow_html=True)
             st.markdown("<span style='color:#555; font-weight:bold;'>Latitudine:</span>", unsafe_allow_html=True)
@@ -892,7 +894,7 @@ def show_gestione_manutenzioni():
         
         with col2:
             st.markdown(f"<span style='color:red;'>{st.session_state.codice_form}</span>", unsafe_allow_html=True)
-            # CAP editabile
+            # CAP editabile accanto all'etichetta "modificabile"
             st.text_input("", value=st.session_state.cap_form, key="cap_form_editable", label_visibility="collapsed")
             st.markdown(f"<span style='color:red;'>{st.session_state.provincia_form}</span>", unsafe_allow_html=True)
             st.markdown(f"<span style='color:red;'>{st.session_state.regione_form}</span>", unsafe_allow_html=True)
@@ -900,6 +902,7 @@ def show_gestione_manutenzioni():
             st.number_input("", value=st.session_state.lon_form, format="%.6f", key="lon_form_editable", label_visibility="collapsed")
         
         st.markdown("</div>", unsafe_allow_html=True)
+
 
 
 
@@ -2405,6 +2408,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

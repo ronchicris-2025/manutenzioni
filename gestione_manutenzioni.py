@@ -955,7 +955,7 @@ with col2:
             referente_pv = st.text_input("Referente", key="referente_pv_form")
             telefono = st.text_input("Telefono", key="telefono_form")
     
-        # 🔹 Spaziatura e bottoni centrati
+            # 🔹 Spaziatura e bottoni centrati
         st.markdown("<br>", unsafe_allow_html=True)
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
@@ -963,36 +963,38 @@ with col2:
             st.markdown("<div style='margin:20px 0;'></div>", unsafe_allow_html=True)
             submitted = st.form_submit_button("🔒 CONFERMA INSERIMENTO", type="primary")
     
+        # ✅ Il blocco if submitted DEVE essere allo stesso livello del with st.form
+        if submitted:
+            if not selected_brand_form or not punto_vendita or not indirizzo or not selected_comune:
+                st.error("Compila i campi obbligatori contrassegnati con *")
+            else:
+                conn = get_connection()
+                cursor = conn.cursor()
+                try:
+                    cursor.execute(f'''
+                        INSERT INTO manutenzioni ({", ".join(MANUTENZIONI_COLUMNS)})
+                        VALUES ({", ".join(["?"]*len(MANUTENZIONI_COLUMNS))})
+                    ''', (
+                        punto_vendita, indirizzo, st.session_state.cap_form,
+                        selected_comune, st.session_state.provincia_form,
+                        st.session_state.regione_form, ultimo_intervento,
+                        prossimo_intervento, attrezzature, note,
+                        st.session_state.lat_form, st.session_state.lon_form,
+                        st.session_state.codice_form, selected_brand_form,
+                        referente_pv, telefono
+                    ))
+                    conn.commit()
+                    st.success("✅ Nuova attività aggiunta con successo!")
+                    st.toast("Attività inserita!", icon="✅")
+                    st.session_state.reset_form_flag = True
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Errore durante l'inserimento: {e}")
+                finally:
+                    conn.close()
+    
     st.markdown("</div>", unsafe_allow_html=True)  # chiusura riquadro grigio
-            
-        
-            if submitted:
-                if not selected_brand_form or not punto_vendita or not indirizzo or not selected_comune:
-                    st.error("Compila i campi obbligatori contrassegnati con *")
-                else:
-                    conn = get_connection()
-                    cursor = conn.cursor()
-                    try:
-                        cursor.execute(f'''
-                            INSERT INTO manutenzioni ({", ".join(MANUTENZIONI_COLUMNS)})
-                            VALUES ({", ".join(["?"]*len(MANUTENZIONI_COLUMNS))})
-                        ''', (
-                            punto_vendita, indirizzo, st.session_state.cap_form,
-                            selected_comune, st.session_state.provincia_form,
-                            st.session_state.regione_form, ultimo_intervento,
-                            prossimo_intervento, attrezzature, note,
-                            st.session_state.lat_form, st.session_state.lon_form,
-                            st.session_state.codice_form, selected_brand_form,
-                            referente_pv, telefono
-                        ))
-                        conn.commit()
-                        st.success("✅ Nuova attività aggiunta con successo!")
-                        st.toast("Attività inserita!", icon="✅")
-                        reset_form_fields()  # reset dei soli campi della form
-                    except Exception as e:
-                        st.error(f"Errore durante l'inserimento: {e}")
-                    finally:
-                        conn.close()
+
 
 # Funzione helper per resettare solo i campi della form
 def reset_form_fields():
@@ -2422,6 +2424,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

@@ -860,7 +860,6 @@ def show_gestione_manutenzioni():
         # ✅ Riquadro grafico per dati auto-compilati
 
         
-
         # Assicurati che session_state abbia i valori
         for key in ["codice_form", "cap_form", "provincia_form", "regione_form", "lat_form", "lon_form"]:
             if key not in st.session_state:
@@ -868,25 +867,28 @@ def show_gestione_manutenzioni():
         
         st.markdown("#### 📍 Dati Comune selezionato")
         
-        # Card con dati statici
+        # Card elegante con valori in rosso e label in grigio
         st.markdown(f"""
         <div style="
             border:2px solid #e0e0e0;
             padding:15px;
             border-radius:8px;
             background-color:#fefefe;
+            width: 100%;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+            font-family: Arial, sans-serif;
         ">
-            <ul style="list-style-type:none; padding-left:0;">
-                <li><strong style='color:red;'>Codice Comune:</strong> {st.session_state.codice_form}</li>
-                <li><strong style='color:red;'>Provincia:</strong> {st.session_state.provincia_form}</li>
-                <li><strong style='color:red;'>Regione:</strong> {st.session_state.regione_form}</li>
-                <li><strong style='color:red;'>Latitudine:</strong> {st.session_state.lat_form:.6f}</li>
-                <li><strong style='color:red;'>Longitudine:</strong> {st.session_state.lon_form:.6f}</li>
+            <ul style="list-style-type:none; padding-left:0; margin:0; line-height:1.8;">
+                <li><span style='color:#555;'>Codice Comune:</span> <span style='color:red;'>{st.session_state.codice_form}</span></li>
+                <li><span style='color:#555;'>Provincia:</span> <span style='color:red;'>{st.session_state.provincia_form}</span></li>
+                <li><span style='color:#555;'>Regione:</span> <span style='color:red;'>{st.session_state.regione_form}</span></li>
+                <li><span style='color:#555;'>Latitudine:</span> <span style='color:red;'>{st.session_state.lat_form:.6f}</span></li>
+                <li><span style='color:#555;'>Longitudine:</span> <span style='color:red;'>{st.session_state.lon_form:.6f}</span></li>
             </ul>
         </div>
         """, unsafe_allow_html=True)
         
-        # Campo editabile (CAP) fuori dal Markdown, ma dentro la card visivamente
+        # Campo editabile (CAP) separato ma dentro la card
         st.text_input("CAP (modificabile)", value=st.session_state.cap_form, key="cap_form")
 
 
@@ -2392,6 +2394,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

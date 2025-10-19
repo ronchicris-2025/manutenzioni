@@ -860,16 +860,15 @@ def show_gestione_manutenzioni():
             <h4>📍 Dati Autocomplilati Comune selezionato </h4>
             </div>
         """, unsafe_allow_html=True)
-        with st.form("form_auto"):
-            col1, col2 = st.columns(2)
-            with col1:
-                st.text_input("Codice Comune", value=st.session_state.codice_form, disabled=True)
-                st.text_input("CAP (modificabile)", value=st.session_state.cap_form, key="cap_form")
-                st.text_input("Provincia", value=st.session_state.provincia_form, disabled=True)
-                st.text_input("Regione", value=st.session_state.regione_form, disabled=True)
-            with col2:
-                st.number_input("Latitudine", value=st.session_state.lat_form, format="%.6f", key="lat_form")
-                st.number_input("Longitudine", value=st.session_state.lon_form, format="%.6f", key="lon_form")
+        col1, col2 = st.columns(2)
+        with col1:
+            st.text_input("Codice Comune", value=st.session_state.codice_form, disabled=True)
+            st.text_input("CAP (modificabile)", value=st.session_state.cap_form, key="cap_form")
+            st.text_input("Provincia", value=st.session_state.provincia_form, disabled=True)
+            st.text_input("Regione", value=st.session_state.regione_form, disabled=True)
+        with col2:
+            st.number_input("Latitudine", value=st.session_state.lat_form, format="%.6f", key="lat_form")
+            st.number_input("Longitudine", value=st.session_state.lon_form, format="%.6f", key="lon_form")
         
         # ✅ Form vera e propria con riquadro e bottone reset
         st.markdown("""
@@ -2356,6 +2355,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

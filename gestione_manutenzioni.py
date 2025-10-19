@@ -856,7 +856,7 @@ def show_gestione_manutenzioni():
     
         # ✅ Riquadro grafico per dati auto-compilati
         st.markdown("""
-            <div style="border:2px solid #f0f0f0; padding:10px; border-radius:8px; background-color:#fefefe;">
+            <div style="border:2px solid ##e0e0e0; padding:10px; border-radius:8px; background-color:#fefefe;">
             <h4>📍 Dati Autocomplilati Comune selezionato </h4>
             </div>
         """, unsafe_allow_html=True)
@@ -893,7 +893,7 @@ def show_gestione_manutenzioni():
                 telefono = st.text_input("Telefono", key="telefono_form")
             
             col1, col2, col3 = st.columns([1, 2, 1,])
-            with col3:
+            with col2:
                  # Bottone Reset Form
                 st.form_submit_button("🔄 Resetta dati Form", on_click=lambda: reset_form_fields())
                 
@@ -2356,6 +2356,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

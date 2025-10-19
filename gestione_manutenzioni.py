@@ -865,17 +865,17 @@ def show_gestione_manutenzioni():
             if key not in st.session_state:
                 st.session_state[key] = "" if "cap" in key else 0.0
         
-        st.header("🏛 Gestione Punti Vendita")
+        
         st.markdown("#### 📍 Dati Comune selezionato")
         
-        # Card esterna
+        # Card esterna senza box grigio vuoto
         st.markdown("""
         <div style="
             border:2px solid #e0e0e0;
-            padding:15px;
+            padding:10px;
             border-radius:8px;
             background-color:#fefefe;
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.05);
             font-family: Arial, sans-serif;
         ">
         """, unsafe_allow_html=True)
@@ -890,29 +890,24 @@ def show_gestione_manutenzioni():
             ("Longitudine", st.session_state.lon_form, True)
         ]
         
-        for idx, (label, value, editable) in enumerate(fields):
+        for label, value, editable in fields:
             col1, col2 = st.columns([1, 2])
             with col1:
-                # Etichetta con colore grigio e bold
                 if label == "CAP" and editable:
-                    st.markdown(f"<span style='color:#555; font-weight:bold;'>{label} (modificabile):</span>", unsafe_allow_html=True)
+                    st.markdown(f"<span style='color:#555; font-weight:bold; font-size:14px;'>{label} (modificabile):</span>", unsafe_allow_html=True)
                 else:
-                    st.markdown(f"<span style='color:#555; font-weight:bold;'>{label}:</span>", unsafe_allow_html=True)
+                    st.markdown(f"<span style='color:#555; font-weight:bold; font-size:14px;'>{label}:</span>", unsafe_allow_html=True)
             with col2:
                 if editable:
                     if isinstance(value, float):
-                        st.number_input("", value=value, format="%.6f", key=f"{label}_editable", label_visibility="collapsed")
+                        st.number_input("", value=value, format="%.6f", key=f"{label}_editable", label_visibility="collapsed", step=0.000001)
                     else:
                         st.text_input("", value=value, key=f"{label}_editable", label_visibility="collapsed")
                 else:
-                    st.markdown(f"<span style='color:red;'>{value}</span>", unsafe_allow_html=True)
+                    st.markdown(f"<span style='color:red; font-size:14px;'>{value}</span>", unsafe_allow_html=True)
             
-            # Separatore tra righe tranne l'ultima
-            if idx < len(fields)-1:
-                st.markdown("<hr style='margin:2px 0; border-color:#e0e0e0;'>", unsafe_allow_html=True)
-        
-        # Chiudi card
         st.markdown("</div>", unsafe_allow_html=True)
+        
 
 
 
@@ -2421,6 +2416,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

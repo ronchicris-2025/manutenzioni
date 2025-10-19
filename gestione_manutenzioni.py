@@ -897,7 +897,7 @@ def show_gestione_manutenzioni():
                 st.form_submit_button("🔄 Resetta dati Form", on_click=lambda: reset_form_fields())
                 with st.container():
                     st.markdown(
-                        "<hr style='border: 1px solid #bbb; margin: 90px 0;'>",
+                        "<hr style='border: 1px solid #bbb; margin: 0px 0;'>",
                         unsafe_allow_html=True
                     )
                 # Bottone Aggiungi
@@ -2360,6 +2360,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

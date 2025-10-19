@@ -963,7 +963,7 @@ with col2:
             st.markdown("<div style='margin:20px 0;'></div>", unsafe_allow_html=True)
             submitted = st.form_submit_button("🔒 CONFERMA INSERIMENTO", type="primary")
     
-        st.markdown("</div>", unsafe_allow_html=True)  # chiusura riquadro grigio
+        # st.markdown("</div>", unsafe_allow_html=True)  # chiusura riquadro grigio
             
         
             if submitted:
@@ -2422,6 +2422,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

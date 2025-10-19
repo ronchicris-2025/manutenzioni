@@ -889,46 +889,81 @@ with col2:
     st.markdown('<span style="color:#cc0000;">Longitudine</span>', unsafe_allow_html=True)
     st.number_input("", value=st.session_state.lon_form, format="%.6f", key="lon_form", label_visibility="collapsed")
 
+    # st.markdown("</div>", unsafe_allow_html=True)  # chiusura riquadro rosso
+    # 📍 Titolo sezione auto-compilata
+    st.markdown("#### 📍 Dati Comune selezionato (auto)")
+    
+    # ✅ Riquadro rosso per i dati auto-compilati
+    st.markdown("""
+        <div style="
+            border: 2px solid #cc0000;
+            padding: 15px;
+            border-radius: 10px;
+            background-color: #fff5f5;
+            margin-bottom: 20px;
+        ">
+    """, unsafe_allow_html=True)
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown('<span style="color:#cc0000;">Codice Comune</span>', unsafe_allow_html=True)
+        st.text_input("", value=st.session_state.codice_form, disabled=True, label_visibility="collapsed")
+    
+        st.markdown('<span style="color:#cc0000;">CAP (modificabile)</span>', unsafe_allow_html=True)
+        st.text_input("", value=st.session_state.cap_form, key="cap_form", label_visibility="collapsed")
+    
+        st.markdown('<span style="color:#cc0000;">Provincia</span>', unsafe_allow_html=True)
+        st.text_input("", value=st.session_state.provincia_form, disabled=True, label_visibility="collapsed")
+    
+        st.markdown('<span style="color:#cc0000;">Regione</span>', unsafe_allow_html=True)
+        st.text_input("", value=st.session_state.regione_form, disabled=True, label_visibility="collapsed")
+    
+    with col2:
+        st.markdown('<span style="color:#cc0000;">Latitudine</span>', unsafe_allow_html=True)
+        st.number_input("", value=st.session_state.lat_form, format="%.6f", key="lat_form", label_visibility="collapsed")
+    
+        st.markdown('<span style="color:#cc0000;">Longitudine</span>', unsafe_allow_html=True)
+        st.number_input("", value=st.session_state.lon_form, format="%.6f", key="lon_form", label_visibility="collapsed")
+    
     st.markdown("</div>", unsafe_allow_html=True)  # chiusura riquadro rosso
     
-        # ➕ Titolo sezione form manuale
+    # ➕ Titolo sezione form manuale
     st.markdown("#### ➕ Inserimento manuale punto vendita")
-        
-        # ✅ Riquadro per form manuale
-        st.markdown("""
-            <div style="
-                border: 2px solid #e0e0e0;
-                padding: 15px;
-                border-radius: 10px;
-                background-color: #fefefe;
-                margin-bottom: 20px;
-            ">
-        """, unsafe_allow_html=True)
-        
-        with st.form("form_manuale"):
-            col1, col2 = st.columns(2)
-            with col1:
-                selected_brand_form = st.selectbox("Seleziona Brand/Formato *", options=brand_list, key="brand_form")
-                punto_vendita = st.text_input("Punto Vendita *", key="punto_vendita_form")
-                indirizzo = st.text_input("Indirizzo *", key="indirizzo_form")
-                note = st.text_area("Note", key="note_form")
-            with col2:
-                ultimo_intervento = st.date_input("Data Ultimo Intervento", key="ultimo_intervento_form")
-                prossimo_intervento = st.date_input("Data Prossimo Intervento", key="prossimo_intervento_form")
-                attrezzature = st.text_area("Attrezzature", key="attrezzature_form")
-                referente_pv = st.text_input("Referente", key="referente_pv_form")
-                telefono = st.text_input("Telefono", key="telefono_form")
-        
-            # 🔹 Spaziatura e bottoni centrati
-            st.markdown("<br>", unsafe_allow_html=True)
-            col1, col2, col3 = st.columns([1, 2, 1])
-            with col2:
-                st.form_submit_button("🔄 Resetta dati Form", on_click=lambda: reset_form_fields())
-                st.markdown("<div style='margin:20px 0;'></div>", unsafe_allow_html=True)
-                submitted = st.form_submit_button("🔒 CONFERMA INSERIMENTO", type="primary")
-        
-        st.markdown("</div>", unsafe_allow_html=True)  # chiusura riquadro grigio
-
+    
+    # ✅ Riquadro per form manuale
+    st.markdown("""
+        <div style="
+            border: 2px solid #e0e0e0;
+            padding: 15px;
+            border-radius: 10px;
+            background-color: #fefefe;
+            margin-bottom: 20px;
+        ">
+    """, unsafe_allow_html=True)
+    
+    with st.form("form_manuale"):
+        col1, col2 = st.columns(2)
+        with col1:
+            selected_brand_form = st.selectbox("Seleziona Brand/Formato *", options=brand_list, key="brand_form")
+            punto_vendita = st.text_input("Punto Vendita *", key="punto_vendita_form")
+            indirizzo = st.text_input("Indirizzo *", key="indirizzo_form")
+            note = st.text_area("Note", key="note_form")
+        with col2:
+            ultimo_intervento = st.date_input("Data Ultimo Intervento", key="ultimo_intervento_form")
+            prossimo_intervento = st.date_input("Data Prossimo Intervento", key="prossimo_intervento_form")
+            attrezzature = st.text_area("Attrezzature", key="attrezzature_form")
+            referente_pv = st.text_input("Referente", key="referente_pv_form")
+            telefono = st.text_input("Telefono", key="telefono_form")
+    
+        # 🔹 Spaziatura e bottoni centrati
+        st.markdown("<br>", unsafe_allow_html=True)
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            st.form_submit_button("🔄 Resetta dati Form", on_click=lambda: reset_form_fields())
+            st.markdown("<div style='margin:20px 0;'></div>", unsafe_allow_html=True)
+            submitted = st.form_submit_button("🔒 CONFERMA INSERIMENTO", type="primary")
+    
+    st.markdown("</div>", unsafe_allow_html=True)  # chiusura riquadro grigio
             
         
             if submitted:
@@ -2387,6 +2422,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

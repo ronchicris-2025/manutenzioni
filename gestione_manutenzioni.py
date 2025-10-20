@@ -252,8 +252,67 @@ def init_login_log():
     conn.commit()
     conn.close()
 
-# Chiama all'avvio
-#init_login_log()
+
+#FUNZIONE DIALOG PER POPUP LOGOUT
+
+@st.dialog("Conferma Logout")
+def show_logout_confirmation_popup():
+    """
+    Mostra un pop-up di conferma prima di effettuare il logout.
+    """
+    st.warning("⚠️ Attenzione: hai salvato le modifiche al database prima di uscire?")
+    
+    # Creiamo due colonne per i pulsanti di conferma
+    confirm_col, cancel_col = st.columns(2)
+
+    with confirm_col:
+        # Se l'utente conferma, eseguiamo il logout e chiudiamo il pop-up
+        if st.button("Sì, esci", key="confirm_logout", type="primary"):
+            perform_logout()
+            # La chiusura del pop-up è gestita automaticamente da st.rerun()
+
+    with cancel_col:
+        # Se l'utente annulla, chiudiamo solo il pop-up
+        if st.button("No, rimani", key="cancel_logout"):
+            # Resettiamo lo stato per nascondere il pop-up al prossimo rerun
+            st.session_state["show_logout_confirmation"] = False
+            st.rerun()
+
+# Aggiungi anche questa funzione di supporto per evitare ripetizioni
+def perform_logout():
+    """
+    Esegue la logica di logout: aggiorna il DB e resetta la sessione.
+    """
+    logout_time = datetime.datetime.now()
+    session_start = st.session_state.get("login_start_time")
+    if session_start:
+        duration_min = (logout_time - session_start).total_seconds() / 60.0
+        
+        # 🔹 Aggiorna l'ultimo log di login
+        conn = sqlite3.connect("login_log.db")
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT id FROM login_log 
+            WHERE username = ? AND logout_time IS NULL 
+            ORDER BY login_time DESC LIMIT 1
+        """, (st.session_state["username"],))
+        row = cursor.fetchone()
+        if row:
+            last_id = row[0]
+            cursor.execute("""
+                UPDATE login_log 
+                SET logout_time = ?, session_duration = ? 
+                WHERE id = ?
+            """, (logout_time.isoformat(), duration_min, last_id))
+            conn.commit()
+            conn.close()
+    
+    # Resetta lo stato della sessione
+    for key in ["logged_in", "username", "role", "login_start_time", "show_logout_confirmation"]:
+        if key in st.session_state:
+            del st.session_state[key]
+            
+    st.rerun() # Riesegue l'app per mostrare la pagina di login
 
 # --------------------------
 # 2️⃣ Log dei tentativi di login
@@ -325,71 +384,21 @@ def check_login():
                 conn.close()
         st.stop()
 
-       
-    
-    
-
-
-       # --- PANNELLO UTENTE LOGGATO ---
+         # --- PANNELLO UTENTE LOGGATO ---
     else:
         col1, col2 = st.columns([4, 1])
         with col1:
             st.info(f"👤 Utente: **{st.session_state['username']}** | Ruolo: **{st.session_state['role']}**")
         with col2:
-            # 1. Il pulsante di logout ora imposta solo uno stato per mostrare la conferma
+            # 1. Il pulsante di logout imposta solo lo stato per mostrare il pop-up
             if st.button("🚪 Logout"):
                 st.session_state["show_logout_confirmation"] = True
     
-        # 2. Controlla se mostrare la finestra di conferma
-        # Usiamo .get() per evitare errori se la chiave non esiste ancora
+        # 2. Controlla se mostrare il pop-up di conferma
         if st.session_state.get("show_logout_confirmation", False):
-            st.warning("⚠️ Attenzione: hai salvato le modifiche al database prima di uscire?")
-            
-            # Creiamo due colonne per i pulsanti di conferma
-            confirm_col, cancel_col = st.columns(2)
-    
-            with confirm_col:
-                # 3. Se l'utente conferma, esegui il logout
-                if st.button("Sì, esci", key="confirm_logout", type="primary"):
-                    logout_time = datetime.datetime.now()
-                    session_start = st.session_state.get("login_start_time")
-                    if session_start:
-                        duration_min = (logout_time - session_start).total_seconds() / 60.0 # durata in minuti
-                        
-                        # 🔹 Aggiorna l'ultimo log di login
-                        conn = sqlite3.connect("login_log.db")
-                        cursor = conn.cursor()
-                        # Trova l'ultimo login aperto
-                        cursor.execute("""
-                            SELECT id FROM login_log 
-                            WHERE username = ? AND logout_time IS NULL 
-                            ORDER BY login_time DESC LIMIT 1
-                        """, (st.session_state["username"],))
-                        row = cursor.fetchone()
-                        if row:
-                            last_id = row[0]
-                            cursor.execute("""
-                                UPDATE login_log 
-                                SET logout_time = ?, session_duration = ? 
-                                WHERE id = ?
-                            """, (logout_time.isoformat(), duration_min, last_id))
-                            conn.commit()
-                            conn.close()
-                    
-                    # Resetta lo stato della sessione, inclusa la conferma di logout
-                    st.session_state["logged_in"] = False
-                    st.session_state["username"] = None
-                    st.session_state["role"] = None
-                    st.session_state["login_start_time"] = None
-                    st.session_state["show_logout_confirmation"] = False # Nasconde la conferma
-                    
-                    st.rerun() # Riesegue l'app per mostrare la pagina di login
-    
-            with cancel_col:
-                # 4. Se l'utente annulla, nasconde solo la finestra di conferma
-                if st.button("No, rimani", key="cancel_logout"):
-                    st.session_state["show_logout_confirmation"] = False
-                    st.rerun() # Riesegue l'app per nascondere il messaggio
+            # 3. Se lo stato è True, chiama la funzione del dialogo
+            show_logout_confirmation_popup()
+
 
 
 
@@ -2419,6 +2428,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

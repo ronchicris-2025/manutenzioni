@@ -140,7 +140,7 @@ def restore_from_github_simple():
         if restored:
             st.info(f"✅ Database ripristinati: {', '.join(restored)}")
         else:
-            st.warning("⚠️ Nessun database ripristinato (già presenti o non trovati).")
+            st.toast("⚠️ Nessun database ripristinato (già presenti o non trovati).")
 
     except KeyError:
         st.error("❌ Errore: credenziali GitHub non trovate in st.secrets['github'].")
@@ -2428,6 +2428,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

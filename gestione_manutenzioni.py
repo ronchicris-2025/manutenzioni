@@ -111,7 +111,7 @@ def restore_from_github_simple():
 
         for db_file in db_files:
             if os.path.exists(db_file):
-                st.toast(f"✅ {db_file} già presente in locale, nessun download necessario.")
+                #st.toast(f"✅ {db_file} già presente in locale, nessun download necessario.")
                 continue
 
             # URL API GitHub per ottenere il file
@@ -2365,7 +2365,7 @@ def main():
     # --- FINE DEL BLOCCO ---
     
     
-
+if st.session_state.get("logged_in", False):
     with st.sidebar:
         LOGO_PATH = "logo.png"
         if os.path.exists(LOGO_PATH):
@@ -2450,6 +2450,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

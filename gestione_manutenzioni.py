@@ -346,7 +346,6 @@ def check_login(username, password):
     """
     # Controllo credenziali
     if "users" not in st.secrets:
-        # Questo errore è critico, quindi lo mostriamo direttamente
         st.error("❌ Nessuna configurazione utenti trovata in `secrets.toml`.")
         return False
 
@@ -2309,35 +2308,27 @@ def show_impostazioni():
 # 🧪 Opzionale: test connessione GitHub
     # test_github_connection()
 def main():
-    # --- Inizializzazione Session State (fatta una sola volta all'avvio) ---
+    # --- Inizializzazione Session State ---
     if "logged_in" not in st.session_state:
         st.session_state["logged_in"] = False
         st.session_state["username"] = None
         st.session_state["role"] = None
         st.session_state["login_start_time"] = None
-    
+
     # 🔹 ASSICURATI CHE I DATABASE SIANO INIZIALIZZATI (se i file esistono)
-    # Questo è il posto giusto per garantire che le tabelle esistano sempre.
     if os.path.exists("manutenzioni.db"):
         init_db()
     if os.path.exists("login_log.db"):
         init_login_log()
-        
-    # --- GESTIONE RIPRISTINO DB (il tuo codice esistente) ---
-    # Esegui il controllo SOLO UNA VOLTA per sessione di login
+
+    # --- GESTIONE RIPRISTINO DB ---
     if "restore_report" not in st.session_state:
         st.session_state["restore_report"] = restore_from_github_simple()
-
-    # Estrai il report dalla sessione per usarlo
     report = st.session_state["restore_report"]
-
-    # Mostra messaggi critici (errori e warning) se presenti
     if report["errors"]:
-        for error in report["errors"]:
-            st.error(error)
+        for error in report["errors"]: st.error(error)
     if report["warnings"]:
-        for warning in report["warnings"]:
-            st.warning(warning)
+        for warning in report["warnings"]: st.warning(warning)
     if report["restored"]:
         st.info(f"✅ Database ripristinati: {', '.join(report['restored'])}")
 
@@ -2352,14 +2343,14 @@ def main():
             submitted = st.form_submit_button("Accedi")
             
             if submitted:
-                # Chiama la NUOVA funzione check_login(username, password)
+                # Qui viene chiamata la nuova funzione "pura"
                 if check_login(username, password):
                     st.success(f"✅ Accesso eseguito come **{username}**")
-                    st.rerun() # Ricarica la pagina per mostrare il pannello utente
+                    st.rerun()
                 else:
                     st.error("❌ Username o password errati.")
         
-        st.stop() # Blocca l'esecuzione del resto della pagina se non si è loggati
+        st.stop() # Blocca l'esecuzione del resto della pagina
 
     else:
         # --- MOSTRA IL PANNELLO UTENTE LOGGATO IN ALTO ---
@@ -2371,77 +2362,19 @@ def main():
                 if st.button("🚪 Logout"):
                     st.session_state["show_logout_confirmation"] = True
 
-        # Gestisci il pop-up di logout (se attivato)
+        # Gestisci il pop-up di logout
         if st.session_state.get("show_logout_confirmation", False):
             show_logout_confirmation_popup()
 
-        # --- BLOCCO MESSAGGI DI BENVENUTO (il tuo codice esistente) ---
-        # Questo blocco ora usa il report salvato nella sessione
+        # --- BLOCCO MESSAGGI DI BENVENUTO ---
         if not st.session_state.get("welcome_messages_shown", False):
-            
-            # Mostra i toast per i file già presenti
             if report["already_present"]:
                 for db_file in report["already_present"]:
                     st.toast(f"✅ {db_file} già presente in locale, nessun download necessario.")
-            
-            # Mostra il toast solo se non è successo ASSOLUTAMENTE NULLA
             if not report["restored"] and not report["already_present"] and not report["errors"] and not report["warnings"]:
                 st.toast("⚠️ Nessun database ripristinato (non trovati nel repo).")
-
-            # Imposta il flag a True per non mostrare più questi toast in questa sessione
-            st.session_state["welcome_messages_shown"] = True
-    # --- 🚀 BARRA SUPERIORE (LOGIN O PANNELLO UTENTE) ---
-    if not st.session_state["logged_in"]:
-        # --- MOSTRA IL FORM DI LOGIN IN ALTO ---
-        st.title("🔐 Accesso all'Applicazione")
-        
-        with st.form("login_form"):
-            username = st.text_input("Username")
-            password = st.text_input("Password", type="password")
-            submitted = st.form_submit_button("Accedi")
-            
-            if submitted:
-                # Chiama la NUOVA funzione check_login(username, password)
-                if check_login(username, password):
-                    st.success(f"✅ Accesso eseguito come **{username}**")
-                    st.rerun() # Ricarica la pagina per mostrare il pannello utente
-                else:
-                    st.error("❌ Username o password errati.")
-        
-        st.stop() # Blocca l'esecuzione del resto della pagina se non si è loggati
-
-    else:
-        # --- MOSTRA IL PANNELLO UTENTE LOGGATO IN ALTO ---
-        with st.container():
-            col1, col2 = st.columns([4, 1])
-            with col1:
-                st.info(f"👤 Utente: **{st.session_state['username']}** | Ruolo: **{st.session_state['role']}**")
-            with col2:
-                if st.button("🚪 Logout"):
-                    st.session_state["show_logout_confirmation"] = True
-
-        # Gestisci il pop-up di logout (se attivato)
-        if st.session_state.get("show_logout_confirmation", False):
-            show_logout_confirmation_popup()
-
-        # --- BLOCCO MESSAGGI DI BENVENUTO (il tuo codice esistente) ---
-        # Questo blocco ora usa il report salvato nella sessione
-        if not st.session_state.get("welcome_messages_shown", False):
-            
-            # Mostra i toast per i file già presenti
-            if report["already_present"]:
-                for db_file in report["already_present"]:
-                    st.toast(f"✅ {db_file} già presente in locale, nessun download necessario.")
-            
-            # Mostra il toast solo se non è successo ASSOLUTAMENTE NULLA
-            if not report["restored"] and not report["already_present"] and not report["errors"] and not report["warnings"]:
-                st.toast("⚠️ Nessun database ripristinato (non trovati nel repo).")
-
-            # Imposta il flag a True per non mostrare più questi toast in questa sessione
             st.session_state["welcome_messages_shown"] = True
 
-    
-if st.session_state.get("logged_in", False):
     with st.sidebar:
         LOGO_PATH = "logo.png"
         if os.path.exists(LOGO_PATH):
@@ -2526,6 +2459,7 @@ if st.session_state.get("logged_in", False):
 
 if __name__ == "__main__":
     main()
+
 
 
 

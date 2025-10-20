@@ -2387,7 +2387,7 @@ def main():
 
     
     
-if st.session_state.get("logged_in", False):
+#if st.session_state.get("logged_in", False):
     with st.sidebar:
         LOGO_PATH = "logo.png"
         if os.path.exists(LOGO_PATH):
@@ -2472,6 +2472,7 @@ if st.session_state.get("logged_in", False):
 
 if __name__ == "__main__":
     main()
+
 
 
 

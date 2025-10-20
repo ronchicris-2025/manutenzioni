@@ -331,29 +331,54 @@ def check_login():
         with col1:
             st.info(f"👤 Utente: **{st.session_state['username']}** | Ruolo: **{st.session_state['role']}**")
         with col2:
-            # 🔸 Gestione stato conferma logout
+            # Stato per la conferma di logout
             if "confirm_logout" not in st.session_state:
                 st.session_state["confirm_logout"] = False
     
+            # Bottone Logout
             if not st.session_state["confirm_logout"]:
                 if st.button("🚪 Logout"):
-                    # Mostra la richiesta di conferma
                     st.session_state["confirm_logout"] = True
                     st.rerun()
             else:
-                # 🔹 Mostra messaggio di conferma
-                st.warning("⚠️ Hai salvato il database prima di uscire?")
+                # --- POPUP CENTRATO ---
+                st.markdown(
+                    """
+                    <div style="
+                        position: fixed;
+                        top: 0; left: 0;
+                        width: 100%; height: 100%;
+                        background-color: rgba(0,0,0,0.4);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        z-index: 9999;
+                    ">
+                        <div style="
+                            background-color: #ffffff;
+                            padding: 30px;
+                            border-radius: 12px;
+                            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+                            text-align: center;
+                            max-width: 420px;
+                            width: 90%;
+                        ">
+                            <h4 style="color:#b00000;">⚠️ Conferma Logout</h4>
+                            <p style="margin-bottom: 20px;">Hai salvato il database prima di uscire?</p>
+                    """,
+                    unsafe_allow_html=True
+                )
     
                 col_confirm, col_cancel = st.columns([1, 1])
                 with col_confirm:
-                    if st.button("✅ Sì, esci comunque"):
+                    if st.button("✅ Sì, esci comunque", use_container_width=True):
                         logout_time = datetime.datetime.now()
                         session_start = st.session_state.get("login_start_time")
     
                         if session_start:
                             duration_min = (logout_time - session_start).total_seconds() / 60.0
     
-                            # 🔹 Aggiorna log accessi
+                            # Aggiorna log accessi
                             conn = sqlite3.connect("login_log.db")
                             cursor = conn.cursor()
                             cursor.execute("""
@@ -375,7 +400,7 @@ def check_login():
                             conn.commit()
                             conn.close()
     
-                        # 🔹 Reset sessione
+                        # Reset sessione
                         st.session_state["logged_in"] = False
                         st.session_state["username"] = None
                         st.session_state["role"] = None
@@ -384,9 +409,11 @@ def check_login():
                         st.rerun()
     
                 with col_cancel:
-                    if st.button("❌ No, resto nell'app"):
+                    if st.button("❌ No, resto nell'app", use_container_width=True):
                         st.session_state["confirm_logout"] = False
                         st.rerun()
+    
+                st.markdown("</div></div>", unsafe_allow_html=True)
 
 
 
@@ -2413,6 +2440,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

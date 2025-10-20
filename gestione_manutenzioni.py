@@ -2340,7 +2340,22 @@ def main():
     # 🧪 Opzionale: test connessione GitHub
     # test_github_connection()
     
-    
+    # --- 🚀 NUOVO BLOCCO: MESSAGGI DI BENVENUTO ---
+    # Questo codice viene eseguito solo se l'utente è loggato E non ha ancora visto i messaggi.
+    if st.session_state.get("logged_in", False) and not st.session_state.get("welcome_messages_shown", False):
+        
+        # ATTENZIONE: Assicurati che la variabile 'db_files' sia disponibile qui.
+        # Se è definita dentro 'restore_from_github_simple', spostala qui o rendila globale.
+        # Esempio (sostituisci con i tuoi nomi di file):
+        db_files = ["manutenzione.db", "login_log.db"] 
+        
+        for db_file in db_files:
+            if os.path.exists(db_file):
+                st.toast(f"✅ {db_file} già presente in locale, nessun download necessario.")
+        
+        # Imposta il flag a True per non mostrare più i messaggi in questa sessione
+        st.session_state["welcome_messages_shown"] = True
+    # --- FINE DEL BLOCCO ---
     
     
 
@@ -2428,6 +2443,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

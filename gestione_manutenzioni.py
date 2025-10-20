@@ -339,78 +339,51 @@ def log_login_attempt(username, success, ip=None):
 # 3️⃣ Funzione di login principale
 # --------------------------
 
-def check_login():
-    if "logged_in" not in st.session_state:
-        st.session_state["logged_in"] = False
-        st.session_state["username"] = None
-        st.session_state["role"] = None
-        st.session_state["login_start_time"] = None
+def check_login(username, password):
+    """
+    Verifica le credenziali, aggiorna lo stato della sessione e logga l'evento.
+    Ritorna True se il login ha successo, False altrimenti.
+    """
+    # Controllo credenziali
+    if "users" not in st.secrets:
+        # Questo errore è critico, quindi lo mostriamo direttamente
+        st.error("❌ Nessuna configurazione utenti trovata in `secrets.toml`.")
+        return False
 
-    # --- FORM LOGIN ---
-    if not st.session_state["logged_in"]:
-        st.subheader("🔐 Login richiesto")
-        username = st.text_input("Username")
-        password = st.text_input("Password", type="password")
+    users = st.secrets["users"]
 
-        if st.button("Accedi"):
-            if "users" not in st.secrets:
-                st.error("❌ Nessuna configurazione utenti trovata in `secrets.toml`.")
-                st.stop()
+    if username in users and password == users[username]["password"]:
+        role = users[username].get("role", "user")
+        
+        # Aggiorna lo stato della sessione
+        st.session_state["logged_in"] = True
+        st.session_state["username"] = username
+        st.session_state["role"] = role
+        st.session_state["login_start_time"] = datetime.datetime.now()
 
-            users = st.secrets["users"]
-
-            # Controllo credenziali
-            if username in users and password == users[username]["password"]:
-                role = users[username].get("role", "user")
-                st.session_state["logged_in"] = True
-                st.session_state["username"] = username
-                st.session_state["role"] = role
-                st.session_state["login_start_time"] = datetime.datetime.now()
-
-                # 🔹 Log login
-                conn = sqlite3.connect("login_log.db")
-                cursor = conn.cursor()
-                cursor.execute("""
-                    INSERT INTO login_log (username, role, login_time, success)
-                    VALUES (?, ?, ?, ?)
-                """, (username, role, st.session_state["login_start_time"].isoformat(), 1))
-                conn.commit()
-                conn.close()
-
-                st.success(f"✅ Accesso eseguito come **{username}** ({role})")
-                st.rerun()
-            else:
-                st.error("❌ Username o password errati.")
-                # 🔹 Log tentativo fallito
-                conn = sqlite3.connect("login_log.db")
-                cursor = conn.cursor()
-                cursor.execute("""
-                    INSERT INTO login_log (username, role, login_time, success)
-                    VALUES (?, ?, ?, ?)
-                """, (username, None, datetime.datetime.now().isoformat(), 0))
-                conn.commit()
-                conn.close()
-        st.stop()
-
-         # --- PANNELLO UTENTE LOGGATO ---
+        # 🔹 Log login riuscito
+        conn = sqlite3.connect("login_log.db")
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO login_log (username, role, login_time, success)
+            VALUES (?, ?, ?, ?)
+        """, (username, role, st.session_state["login_start_time"].isoformat(), 1))
+        conn.commit()
+        conn.close()
+        
+        return True
     else:
-        col1, col2 = st.columns([4, 1])
-        with col1:
-            st.info(f"👤 Utente: **{st.session_state['username']}** | Ruolo: **{st.session_state['role']}**")
-        with col2:
-            # 1. Il pulsante di logout imposta solo lo stato per mostrare il pop-up
-            if st.button("🚪 Logout"):
-                st.session_state["show_logout_confirmation"] = True
-    
-        # 2. Controlla se mostrare il pop-up di conferma
-        if st.session_state.get("show_logout_confirmation", False):
-            # 3. Se lo stato è True, chiama la funzione del dialogo
-            show_logout_confirmation_popup()
-
-
-
-
-
+        # 🔹 Log tentativo fallito
+        conn = sqlite3.connect("login_log.db")
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO login_log (username, role, login_time, success)
+            VALUES (?, ?, ?, ?)
+        """, (username, None, datetime.datetime.now().isoformat(), 0))
+        conn.commit()
+        conn.close()
+        
+        return False
 
 
 # --------------------------
@@ -2336,12 +2309,21 @@ def show_impostazioni():
 # 🧪 Opzionale: test connessione GitHub
     # test_github_connection()
 def main():
-    # 🔁 Ripristina i database da GitHub solo se mancano in locale
-    # Inizializza i database (crea le tabelle se non esistono)
-    init_db()
-    init_login_log()
-
-    # --- GESTIONE DEL RIPRISTINO E MESSAGGI ---
+    # --- Inizializzazione Session State (fatta una sola volta all'avvio) ---
+    if "logged_in" not in st.session_state:
+        st.session_state["logged_in"] = False
+        st.session_state["username"] = None
+        st.session_state["role"] = None
+        st.session_state["login_start_time"] = None
+    
+    # 🔹 ASSICURATI CHE I DATABASE SIANO INIZIALIZZATI (se i file esistono)
+    # Questo è il posto giusto per garantire che le tabelle esistano sempre.
+    if os.path.exists("manutenzioni.db"):
+        init_db()
+    if os.path.exists("login_log.db"):
+        init_login_log()
+        
+    # --- GESTIONE RIPRISTINO DB (il tuo codice esistente) ---
     # Esegui il controllo SOLO UNA VOLTA per sessione di login
     if "restore_report" not in st.session_state:
         st.session_state["restore_report"] = restore_from_github_simple()
@@ -2350,7 +2332,6 @@ def main():
     report = st.session_state["restore_report"]
 
     # Mostra messaggi critici (errori e warning) se presenti
-    # Questi sono importanti e l'utente deve vederli subito
     if report["errors"]:
         for error in report["errors"]:
             st.error(error)
@@ -2360,25 +2341,104 @@ def main():
     if report["restored"]:
         st.info(f"✅ Database ripristinati: {', '.join(report['restored'])}")
 
-    # 🔐 Gestione login
-    check_login()
-
-    # --- BLOCCO MESSAGGI DI BENVENUTO (MIGLIORATO) ---
-    # Questo blocco ora usa il report salvato nella sessione
-    if st.session_state.get("logged_in", False) and not st.session_state.get("welcome_messages_shown", False):
+    # --- 🚀 BARRA SUPERIORE (LOGIN O PANNELLO UTENTE) ---
+    if not st.session_state["logged_in"]:
+        # --- MOSTRA IL FORM DI LOGIN IN ALTO ---
+        st.title("🔐 Accesso all'Applicazione")
         
-        # Mostra i toast per i file già presenti
-        if report["already_present"]:
-            for db_file in report["already_present"]:
-                st.toast(f"✅ {db_file} già presente in locale, nessun download necessario.")
+        with st.form("login_form"):
+            username = st.text_input("Username")
+            password = st.text_input("Password", type="password")
+            submitted = st.form_submit_button("Accedi")
+            
+            if submitted:
+                # Chiama la NUOVA funzione check_login(username, password)
+                if check_login(username, password):
+                    st.success(f"✅ Accesso eseguito come **{username}**")
+                    st.rerun() # Ricarica la pagina per mostrare il pannello utente
+                else:
+                    st.error("❌ Username o password errati.")
         
-        # Mostra il toast solo se non è successo ASSOLUTAMENTE NULLA
-        if not report["restored"] and not report["already_present"] and not report["errors"] and not report["warnings"]:
-            st.toast("⚠️ Nessun database ripristinato (non trovati nel repo).")
+        st.stop() # Blocca l'esecuzione del resto della pagina se non si è loggati
 
-        # Imposta il flag a True per non mostrare più questi toast in questa sessione
-        st.session_state["welcome_messages_shown"] = True
+    else:
+        # --- MOSTRA IL PANNELLO UTENTE LOGGATO IN ALTO ---
+        with st.container():
+            col1, col2 = st.columns([4, 1])
+            with col1:
+                st.info(f"👤 Utente: **{st.session_state['username']}** | Ruolo: **{st.session_state['role']}**")
+            with col2:
+                if st.button("🚪 Logout"):
+                    st.session_state["show_logout_confirmation"] = True
 
+        # Gestisci il pop-up di logout (se attivato)
+        if st.session_state.get("show_logout_confirmation", False):
+            show_logout_confirmation_popup()
+
+        # --- BLOCCO MESSAGGI DI BENVENUTO (il tuo codice esistente) ---
+        # Questo blocco ora usa il report salvato nella sessione
+        if not st.session_state.get("welcome_messages_shown", False):
+            
+            # Mostra i toast per i file già presenti
+            if report["already_present"]:
+                for db_file in report["already_present"]:
+                    st.toast(f"✅ {db_file} già presente in locale, nessun download necessario.")
+            
+            # Mostra il toast solo se non è successo ASSOLUTAMENTE NULLA
+            if not report["restored"] and not report["already_present"] and not report["errors"] and not report["warnings"]:
+                st.toast("⚠️ Nessun database ripristinato (non trovati nel repo).")
+
+            # Imposta il flag a True per non mostrare più questi toast in questa sessione
+            st.session_state["welcome_messages_shown"] = True
+    # --- 🚀 BARRA SUPERIORE (LOGIN O PANNELLO UTENTE) ---
+    if not st.session_state["logged_in"]:
+        # --- MOSTRA IL FORM DI LOGIN IN ALTO ---
+        st.title("🔐 Accesso all'Applicazione")
+        
+        with st.form("login_form"):
+            username = st.text_input("Username")
+            password = st.text_input("Password", type="password")
+            submitted = st.form_submit_button("Accedi")
+            
+            if submitted:
+                # Chiama la NUOVA funzione check_login(username, password)
+                if check_login(username, password):
+                    st.success(f"✅ Accesso eseguito come **{username}**")
+                    st.rerun() # Ricarica la pagina per mostrare il pannello utente
+                else:
+                    st.error("❌ Username o password errati.")
+        
+        st.stop() # Blocca l'esecuzione del resto della pagina se non si è loggati
+
+    else:
+        # --- MOSTRA IL PANNELLO UTENTE LOGGATO IN ALTO ---
+        with st.container():
+            col1, col2 = st.columns([4, 1])
+            with col1:
+                st.info(f"👤 Utente: **{st.session_state['username']}** | Ruolo: **{st.session_state['role']}**")
+            with col2:
+                if st.button("🚪 Logout"):
+                    st.session_state["show_logout_confirmation"] = True
+
+        # Gestisci il pop-up di logout (se attivato)
+        if st.session_state.get("show_logout_confirmation", False):
+            show_logout_confirmation_popup()
+
+        # --- BLOCCO MESSAGGI DI BENVENUTO (il tuo codice esistente) ---
+        # Questo blocco ora usa il report salvato nella sessione
+        if not st.session_state.get("welcome_messages_shown", False):
+            
+            # Mostra i toast per i file già presenti
+            if report["already_present"]:
+                for db_file in report["already_present"]:
+                    st.toast(f"✅ {db_file} già presente in locale, nessun download necessario.")
+            
+            # Mostra il toast solo se non è successo ASSOLUTAMENTE NULLA
+            if not report["restored"] and not report["already_present"] and not report["errors"] and not report["warnings"]:
+                st.toast("⚠️ Nessun database ripristinato (non trovati nel repo).")
+
+            # Imposta il flag a True per non mostrare più questi toast in questa sessione
+            st.session_state["welcome_messages_shown"] = True
 
     
 if st.session_state.get("logged_in", False):
@@ -2466,6 +2526,7 @@ if st.session_state.get("logged_in", False):
 
 if __name__ == "__main__":
     main()
+
 
 
 

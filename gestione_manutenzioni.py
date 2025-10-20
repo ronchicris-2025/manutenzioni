@@ -97,7 +97,14 @@ def restore_from_github_simple():
     """
     🔄 Ripristina i database da GitHub *solo se non presenti in locale*.
     Usa i parametri di connessione da st.secrets["github"].
+    RITORNA: Un dizionario con i risultati del ripristino.
     """
+    report = {
+        "restored": [],         # Lista dei file scaricati con successo
+        "already_present": [],  # Lista dei file già presenti in locale
+        "errors": [],           # Lista degli errori critici
+        "warnings": []          # Lista degli avvertimenti
+    }
     try:
         github_conf = st.secrets["github"]
         token = github_conf["token"]
@@ -107,14 +114,11 @@ def restore_from_github_simple():
         db_files = ["manutenzioni.db", "login_log.db"]
         headers = {"Authorization": f"token {token}"}
 
-        restored = []
-
         for db_file in db_files:
             if os.path.exists(db_file):
-                #st.toast(f"✅ {db_file} già presente in locale, nessun download necessario.")
+                report["already_present"].append(db_file)
                 continue
 
-            # URL API GitHub per ottenere il file
             url = f"https://api.github.com/repos/{repo}/contents/{db_file}?ref={branch}"
             response = requests.get(url, headers=headers)
 
@@ -124,28 +128,23 @@ def restore_from_github_simple():
                 encoding = content_json.get("encoding", "")
 
                 if encoding == "base64" and encoded_content:
-                    # Decodifica e salva localmente
                     binary_data = base64.b64decode(encoded_content)
                     with open(db_file, "wb") as f:
                         f.write(binary_data)
-                    restored.append(db_file)
-                    st.success(f"✅ {db_file} ripristinato da GitHub.")
+                    report["restored"].append(db_file)
                 else:
-                    st.warning(f"⚠️ {db_file} trovato ma encoding non valido ({encoding}).")
+                    report["warnings"].append(f"⚠️ {db_file} trovato ma encoding non valido ({encoding}).")
             elif response.status_code == 404:
-                st.warning(f"⚠️ {db_file} non trovato nel repo GitHub.")
+                report["warnings"].append(f"⚠️ {db_file} non trovato nel repo GitHub.")
             else:
-                st.error(f"❌ Errore GitHub ({response.status_code}): {response.text}")
-
-        if restored:
-            st.info(f"✅ Database ripristinati: {', '.join(restored)}")
-        else:
-            st.toast("⚠️ Nessun database ripristinato (già presenti o non trovati).")
+                report["errors"].append(f"❌ Errore GitHub ({response.status_code}) per {db_file}.")
 
     except KeyError:
-        st.error("❌ Errore: credenziali GitHub non trovate in st.secrets['github'].")
+        report["errors"].append("❌ Errore: credenziali GitHub non trovate in st.secrets['github'].")
     except Exception as e:
-        st.error(f"❌ Errore imprevisto durante il ripristino: {e}")
+        report["errors"].append(f"❌ Errore imprevisto durante il ripristino: {e}")
+
+    return report
 
 
 
@@ -308,19 +307,21 @@ def perform_logout():
             conn.close()
     
     # Resetta lo stato della sessione, inclusa la nostra nuova variabile
+      # Resetta lo stato della sessione, inclusa la nostra nuova variabile
     keys_to_delete = [
         "logged_in", 
         "username", 
         "role", 
         "login_start_time", 
         "show_logout_confirmation",
-        "welcome_messages_shown"  # <--- AGGIUNGI QUESTA CHIAVE
+        "welcome_messages_shown",  # Flag per i toast di benvenuto
+        "restore_report"           # <--- AGGIUNGI QUESTA CHIAVE
     ]
     for key in keys_to_delete:
         if key in st.session_state:
             del st.session_state[key]
             
-    st.rerun() # Riesegue l'app per mostrare la pagina di login
+    st.rerun()
 # --------------------------
 # 2️⃣ Log dei tentativi di login
 # --------------------------
@@ -2340,6 +2341,25 @@ def main():
     # 🧱 Inizializza i database (crea le tabelle se non esistono)
     init_db()
     init_login_log()
+     --- 🚀 NUOVA GESTIONE DEL RIPRISTINO E MESSAGGI ---
+    # Esegui il controllo SOLO UNA VOLTA per sessione di login
+    if "restore_report" not in st.session_state:
+        st.session_state["restore_report"] = restore_from_github_simple()
+
+    # Estrai il report dalla sessione per usarlo
+    report = st.session_state["restore_report"]
+
+    # Mostra messaggi critici (errori e warning) se presenti
+    # Questi sono importanti e l'utente deve vederli subito
+    if report["errors"]:
+        for error in report["errors"]:
+            st.error(error)
+    if report["warnings"]:
+        for warning in report["warnings"]:
+            st.warning(warning)
+    if report["restored"]:
+        st.info(f"✅ Database ripristinati: {', '.join(report['restored'])}")
+    # --- FINE GESTIONE RIPRISTINO ---
 
     # 🔐 Gestione login
     check_login()
@@ -2347,22 +2367,24 @@ def main():
     # 🧪 Opzionale: test connessione GitHub
     # test_github_connection()
     
-    # --- 🚀 NUOVO BLOCCO: MESSAGGI DI BENVENUTO ---
-    # Questo codice viene eseguito solo se l'utente è loggato E non ha ancora visto i messaggi.
+    # --- 🚀 BLOCCO MESSAGGI DI BENVENUTO (MIGLIORATO) ---
+    # Questo blocco ora usa il report salvato nella sessione
     if st.session_state.get("logged_in", False) and not st.session_state.get("welcome_messages_shown", False):
         
-        # ATTENZIONE: Assicurati che la variabile 'db_files' sia disponibile qui.
-        # Se è definita dentro 'restore_from_github_simple', spostala qui o rendila globale.
-        # Esempio (sostituisci con i tuoi nomi di file):
-        db_files = ["manutenzione.db", "login_log.db"] 
-        
-        for db_file in db_files:
-            if os.path.exists(db_file):
+        # Mostra i toast per i file già presenti
+        if report["already_present"]:
+            for db_file in report["already_present"]:
                 st.toast(f"✅ {db_file} già presente in locale, nessun download necessario.")
         
-        # Imposta il flag a True per non mostrare più i messaggi in questa sessione
+        # Mostra il toast solo se non è successo ASSOLUTAMENTE NULLA
+        # (nessun ripristino, nessun file presente, nessun errore/warning)
+        if not report["restored"] and not report["already_present"] and not report["errors"] and not report["warnings"]:
+            st.toast("⚠️ Nessun database ripristinato (non trovati nel repo).")
+
+        # Imposta il flag a True per non mostrare più questi toast in questa sessione
         st.session_state["welcome_messages_shown"] = True
     # --- FINE DEL BLOCCO ---
+
     
     
 if st.session_state.get("logged_in", False):
@@ -2450,6 +2472,7 @@ if st.session_state.get("logged_in", False):
 
 if __name__ == "__main__":
     main()
+
 
 
 

@@ -325,8 +325,10 @@ def check_login():
                 conn.close()
         st.stop()
 
-   
-       # --- PANNELLO UTENTE LOGGATO ---
+       
+    
+    
+    # --- PANNELLO UTENTE LOGGATO ---
     else:
         col1, col2 = st.columns([4, 1])
         with col1:
@@ -336,75 +338,48 @@ def check_login():
             if "confirm_logout" not in st.session_state:
                 st.session_state["confirm_logout"] = False
     
-            # 🔘 Mostra bottone Logout principale
             if not st.session_state["confirm_logout"]:
                 if st.button("🚪 Logout"):
                     st.session_state["confirm_logout"] = True
-                    st.rerun()
     
-            # 🧩 Mostra popup modale di conferma
+            # ✅ Mostra popup Streamlit centrato
             if st.session_state["confirm_logout"]:
-                st.markdown("""
-                    <style>
-                    /* Sfondo scuro opaco */
-                    .overlay {
+                st.markdown(
+                    """
+                    <div style="
                         position: fixed;
                         top: 0; left: 0;
                         width: 100vw; height: 100vh;
-                        background-color: rgba(0,0,0,0.55);
+                        background-color: rgba(0,0,0,0.5);
                         display: flex;
                         justify-content: center;
                         align-items: center;
-                        z-index: 9999;
-                    }
-                    /* Popup bianco centrato */
-                    .popup {
-                        background: white;
-                        border-radius: 15px;
-                        box-shadow: 0 6px 25px rgba(0,0,0,0.35);
-                        padding: 35px;
-                        width: 420px;
-                        text-align: center;
-                        animation: fadeIn 0.3s ease-in-out;
-                    }
-                    @keyframes fadeIn {
-                        from {opacity: 0; transform: scale(0.9);}
-                        to {opacity: 1; transform: scale(1);}
-                    }
-                    .popup h4 {
-                        color: #b00000;
-                        margin-bottom: 10px;
-                    }
-                    .popup p {
-                        font-size: 15px;
-                        color: #333;
-                        margin-bottom: 25px;
-                    }
-                    </style>
-    
-                    <div class="overlay">
-                        <div class="popup">
-                            <h4>⚠️ Conferma Logout</h4>
-                            <p>Hai salvato il database prima di uscire?</p>
+                        z-index: 9999;">
+                        <div style="
+                            background-color: white;
+                            border-radius: 12px;
+                            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+                            padding: 40px;
+                            width: 420px;
+                            text-align: center;">
+                            <h4 style="color: darkred;">⚠️ Conferma Logout</h4>
+                            <p style="font-size:16px;">Hai salvato il database prima di uscire?</p>
                         </div>
                     </div>
-                """, unsafe_allow_html=True)
+                    """,
+                    unsafe_allow_html=True
+                )
     
-                # 🔘 Bottoni reali Streamlit (renderizzati sopra)
-                popup_col1, popup_col2, popup_col3 = st.columns([1.5, 1, 1.5])
-                with popup_col2:
+                # ✅ Bottoni veri di Streamlit (non in background)
+                col_space, col_btns, col_space2 = st.columns([2, 1.2, 2])
+                with col_btns:
                     colA, colB = st.columns(2)
                     with colA:
-                        yes_logout = st.button("✅ Sì, esci")
+                        yes_logout = st.button("✅ Sì, esci", use_container_width=True)
                     with colB:
-                        no_stay = st.button("❌ No, resto")
+                        no_stay = st.button("❌ No, resto", use_container_width=True)
     
-                # ⚙️ Azioni reali
-                if "yes_logout" not in st.session_state:
-                    st.session_state["yes_logout"] = False
-                if "no_stay" not in st.session_state:
-                    st.session_state["no_stay"] = False
-    
+                # ⚙️ Azioni
                 if yes_logout:
                     logout_time = datetime.datetime.now()
                     session_start = st.session_state.get("login_start_time")
@@ -2464,6 +2439,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

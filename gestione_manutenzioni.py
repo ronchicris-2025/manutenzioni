@@ -331,54 +331,56 @@ def check_login():
         with col1:
             st.info(f"👤 Utente: **{st.session_state['username']}** | Ruolo: **{st.session_state['role']}**")
         with col2:
-            # Stato per la conferma di logout
             if "confirm_logout" not in st.session_state:
                 st.session_state["confirm_logout"] = False
     
-            # Bottone Logout
             if not st.session_state["confirm_logout"]:
                 if st.button("🚪 Logout"):
                     st.session_state["confirm_logout"] = True
                     st.rerun()
             else:
-                # --- POPUP CENTRATO ---
+                # --- Popup grafico centrato ---
                 st.markdown(
                     """
-                    <div style="
+                    <style>
+                    .popup-overlay {
                         position: fixed;
                         top: 0; left: 0;
                         width: 100%; height: 100%;
-                        background-color: rgba(0,0,0,0.4);
+                        background-color: rgba(0, 0, 0, 0.5);
                         display: flex;
-                        align-items: center;
                         justify-content: center;
+                        align-items: center;
                         z-index: 9999;
-                    ">
-                        <div style="
-                            background-color: #ffffff;
-                            padding: 30px;
-                            border-radius: 12px;
-                            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-                            text-align: center;
-                            max-width: 420px;
-                            width: 90%;
-                        ">
+                    }
+                    .popup-box {
+                        background-color: white;
+                        padding: 30px;
+                        border-radius: 12px;
+                        text-align: center;
+                        width: 420px;
+                        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+                    }
+                    </style>
+    
+                    <div class="popup-overlay">
+                        <div class="popup-box">
                             <h4 style="color:#b00000;">⚠️ Conferma Logout</h4>
                             <p style="margin-bottom: 20px;">Hai salvato il database prima di uscire?</p>
                     """,
                     unsafe_allow_html=True
                 )
     
-                col_confirm, col_cancel = st.columns([1, 1])
-                with col_confirm:
-                    if st.button("✅ Sì, esci comunque", use_container_width=True):
+                # Pulsanti centrati e visibili nel popup
+                col_a, col_b = st.columns([1, 1])
+                with col_a:
+                    if st.button("✅ Sì, esci comunque", use_container_width=True, key="confirm_exit"):
                         logout_time = datetime.datetime.now()
                         session_start = st.session_state.get("login_start_time")
     
                         if session_start:
                             duration_min = (logout_time - session_start).total_seconds() / 60.0
     
-                            # Aggiorna log accessi
                             conn = sqlite3.connect("login_log.db")
                             cursor = conn.cursor()
                             cursor.execute("""
@@ -396,11 +398,9 @@ def check_login():
                                     SET logout_time = ?, session_duration = ?
                                     WHERE id = ?
                                 """, (logout_time.isoformat(), duration_min, last_id))
-    
                             conn.commit()
                             conn.close()
     
-                        # Reset sessione
                         st.session_state["logged_in"] = False
                         st.session_state["username"] = None
                         st.session_state["role"] = None
@@ -408,8 +408,8 @@ def check_login():
                         st.session_state["confirm_logout"] = False
                         st.rerun()
     
-                with col_cancel:
-                    if st.button("❌ No, resto nell'app", use_container_width=True):
+                with col_b:
+                    if st.button("❌ No, resto nell'app", use_container_width=True, key="cancel_exit"):
                         st.session_state["confirm_logout"] = False
                         st.rerun()
     
@@ -2440,6 +2440,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

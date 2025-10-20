@@ -326,7 +326,6 @@ def check_login():
         st.stop()
 
     # --- PANNELLO UTENTE LOGGATO ---
-    
     else:
         col1, col2 = st.columns([4, 1])
         with col1:
@@ -341,44 +340,58 @@ def check_login():
                     st.session_state["confirm_logout"] = True
                     st.rerun()
             else:
-                # --- Simulazione popup centrato ---
+                # Simulazione popup centrato (usabile al 100%)
                 st.markdown(
                     """
                     <div style='
                         position: fixed;
                         top: 0; left: 0;
                         width: 100vw; height: 100vh;
-                        background-color: rgba(0,0,0,0.5);
-                        display: flex;
-                        justify-content: center;
-                        align-items: center;
+                        background-color: rgba(0, 0, 0, 0.4);
+                        display: flex; justify-content: center; align-items: center;
                         z-index: 9999;
                     '>
-                        <div style='
-                            background-color: #fff;
-                            padding: 30px 40px;
-                            border-radius: 12px;
-                            width: 400px;
-                            text-align: center;
-                            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-                            font-family: "Source Sans Pro", sans-serif;
-                        '>
-                            <h4 style='color:#b00000; margin-bottom:10px;'>⚠️ Conferma Logout</h4>
-                            <p style='margin-bottom: 25px; font-size: 15px;'>
-                                Hai salvato il database prima di uscire?
-                            </p>
+                    </div>
                     """,
                     unsafe_allow_html=True
                 )
     
-                # I pulsanti vengono centrati nel popup stesso
-                btn_col1, btn_col2 = st.columns([1, 1])
-                with btn_col1:
-                    conferma = st.button("✅ Sì, esci comunque", use_container_width=True, key="confirm_exit")
-                with btn_col2:
-                    annulla = st.button("❌ No, resto nell'app", use_container_width=True, key="cancel_exit")
+                # Popup simulato con Streamlit (funzionale)
+                st.markdown("<br><br><br>", unsafe_allow_html=True)
+                with st.container():
+                    st.markdown(
+                        """
+                        <div style='
+                            background-color: #fff;
+                            border-radius: 12px;
+                            box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+                            padding: 25px 40px;
+                            text-align: center;
+                            margin: auto;
+                            width: 420px;
+                        '>
+                        <h4 style='color:#b00000;'>⚠️ Conferma Logout</h4>
+                        <p style='font-size:15px; margin-top:10px;'>
+                            Hai salvato il database prima di uscire?
+                        </p>
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
     
-                st.markdown("</div></div>", unsafe_allow_html=True)
+                    # Pulsanti centrati
+                    st.markdown("<div style='height:15px;'></div>", unsafe_allow_html=True)
+                    c1, c2, c3 = st.columns([1, 1, 1])
+                    with c1:
+                        pass
+                    with c2:
+                        col_btn1, col_btn2 = st.columns(2)
+                        with col_btn1:
+                            conferma = st.button("✅ Sì, esci", use_container_width=True, key="confirm_exit")
+                        with col_btn2:
+                            annulla = st.button("❌ No, resto", use_container_width=True, key="cancel_exit")
+                    with c3:
+                        pass
     
                 # --- Logica pulsanti ---
                 if conferma:
@@ -387,7 +400,6 @@ def check_login():
     
                     if session_start:
                         duration_min = (logout_time - session_start).total_seconds() / 60.0
-    
                         conn = sqlite3.connect("login_log.db")
                         cursor = conn.cursor()
                         cursor.execute("""
@@ -397,7 +409,6 @@ def check_login():
                             LIMIT 1
                         """, (st.session_state["username"],))
                         row = cursor.fetchone()
-    
                         if row:
                             last_id = row[0]
                             cursor.execute("""
@@ -408,7 +419,6 @@ def check_login():
                         conn.commit()
                         conn.close()
     
-                    # Reset sessione e rerun
                     st.session_state["logged_in"] = False
                     st.session_state["username"] = None
                     st.session_state["role"] = None
@@ -2447,6 +2457,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

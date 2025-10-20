@@ -307,13 +307,20 @@ def perform_logout():
             conn.commit()
             conn.close()
     
-    # Resetta lo stato della sessione
-    for key in ["logged_in", "username", "role", "login_start_time", "show_logout_confirmation"]:
+    # Resetta lo stato della sessione, inclusa la nostra nuova variabile
+    keys_to_delete = [
+        "logged_in", 
+        "username", 
+        "role", 
+        "login_start_time", 
+        "show_logout_confirmation",
+        "welcome_messages_shown"  # <--- AGGIUNGI QUESTA CHIAVE
+    ]
+    for key in keys_to_delete:
         if key in st.session_state:
             del st.session_state[key]
             
     st.rerun() # Riesegue l'app per mostrare la pagina di login
-
 # --------------------------
 # 2️⃣ Log dei tentativi di login
 # --------------------------
@@ -2443,6 +2450,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

@@ -111,7 +111,7 @@ def restore_from_github_simple():
 
         for db_file in db_files:
             if os.path.exists(db_file):
-                st.info(f"✅ {db_file} già presente in locale, nessun download necessario.")
+                st.toast(f"✅ {db_file} già presente in locale, nessun download necessario.")
                 continue
 
             # URL API GitHub per ottenere il file
@@ -2428,6 +2428,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

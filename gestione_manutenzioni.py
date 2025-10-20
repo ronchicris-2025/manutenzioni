@@ -331,43 +331,62 @@ def check_login():
         with col1:
             st.info(f"👤 Utente: **{st.session_state['username']}** | Ruolo: **{st.session_state['role']}**")
         with col2:
-            if st.button("🚪 Logout"):
-                logout_time = datetime.datetime.now()
-                session_start = st.session_state.get("login_start_time")
-                if session_start:
-                    duration_min = (logout_time - session_start).total_seconds() / 60.0  # durata in minuti
-
-                    # 🔹 Aggiorna l'ultimo log di login
-                    conn = sqlite3.connect("login_log.db")
-                    cursor = conn.cursor()
-
-                # Trova l'ultimo login aperto
-                    cursor.execute("""
-                        SELECT id FROM login_log
-                        WHERE username = ? AND logout_time IS NULL
-                        ORDER BY login_time DESC
-                        LIMIT 1
-                    """, (st.session_state["username"],))
-                    row = cursor.fetchone()
-
-                    if row:
-                        last_id = row[0]
-                        cursor.execute("""
-                        UPDATE login_log
-                        SET logout_time = ?, session_duration = ?
-                        WHERE id = ?
-                        """, (logout_time.isoformat(), duration_min, last_id))
-
-                    conn.commit()
-                    conn.close()
-
-
-                # Resetta sessione
-                st.session_state["logged_in"] = False
-                st.session_state["username"] = None
-                st.session_state["role"] = None
-                st.session_state["login_start_time"] = None
-                st.rerun()
+            # 🔸 Gestione stato conferma logout
+            if "confirm_logout" not in st.session_state:
+                st.session_state["confirm_logout"] = False
+    
+            if not st.session_state["confirm_logout"]:
+                if st.button("🚪 Logout"):
+                    # Mostra la richiesta di conferma
+                    st.session_state["confirm_logout"] = True
+                    st.rerun()
+            else:
+                # 🔹 Mostra messaggio di conferma
+                st.warning("⚠️ Hai salvato il database prima di uscire?")
+    
+                col_confirm, col_cancel = st.columns([1, 1])
+                with col_confirm:
+                    if st.button("✅ Sì, esci comunque"):
+                        logout_time = datetime.datetime.now()
+                        session_start = st.session_state.get("login_start_time")
+    
+                        if session_start:
+                            duration_min = (logout_time - session_start).total_seconds() / 60.0
+    
+                            # 🔹 Aggiorna log accessi
+                            conn = sqlite3.connect("login_log.db")
+                            cursor = conn.cursor()
+                            cursor.execute("""
+                                SELECT id FROM login_log
+                                WHERE username = ? AND logout_time IS NULL
+                                ORDER BY login_time DESC
+                                LIMIT 1
+                            """, (st.session_state["username"],))
+                            row = cursor.fetchone()
+    
+                            if row:
+                                last_id = row[0]
+                                cursor.execute("""
+                                    UPDATE login_log
+                                    SET logout_time = ?, session_duration = ?
+                                    WHERE id = ?
+                                """, (logout_time.isoformat(), duration_min, last_id))
+    
+                            conn.commit()
+                            conn.close()
+    
+                        # 🔹 Reset sessione
+                        st.session_state["logged_in"] = False
+                        st.session_state["username"] = None
+                        st.session_state["role"] = None
+                        st.session_state["login_start_time"] = None
+                        st.session_state["confirm_logout"] = False
+                        st.rerun()
+    
+                with col_cancel:
+                    if st.button("❌ No, resto nell'app"):
+                        st.session_state["confirm_logout"] = False
+                        st.rerun()
 
 
 
@@ -2394,6 +2413,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

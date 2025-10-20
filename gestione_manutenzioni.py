@@ -328,89 +328,99 @@ def check_login():
        
     
     
-    # --- PANNELLO UTENTE LOGGATO ---
-    else:
-        col1, col2 = st.columns([4, 1])
-        with col1:
-            st.info(f"👤 Utente: **{st.session_state['username']}** | Ruolo: **{st.session_state['role']}**")
-    
-        with col2:
-            if "confirm_logout" not in st.session_state:
-                st.session_state["confirm_logout"] = False
-    
-            if not st.session_state["confirm_logout"]:
-                if st.button("🚪 Logout"):
-                    st.session_state["confirm_logout"] = True
-    
-            # ✅ Mostra popup Streamlit centrato
-            if st.session_state["confirm_logout"]:
-                st.markdown(
-                    """
-                    <div style="
-                        position: fixed;
-                        top: 0; left: 0;
-                        width: 100vw; height: 100vh;
-                        background-color: rgba(0,0,0,0.5);
-                        display: flex;
-                        justify-content: center;
-                        align-items: center;
-                        z-index: 9999;">
-                        <div style="
-                            background-color: white;
-                            border-radius: 12px;
-                            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
-                            padding: 40px;
-                            width: 420px;
-                            text-align: center;">
-                            <h4 style="color: darkred;">⚠️ Conferma Logout</h4>
-                            <p style="font-size:16px;">Hai salvato il database prima di uscire?</p>
-                        </div>
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
-    
-                # ✅ Bottoni veri di Streamlit (non in background)
-                col_space, col_btns, col_space2 = st.columns([2, 1.2, 2])
-                with col_btns:
-                    colA, colB = st.columns(2)
-                    with colA:
-                        yes_logout = st.button("✅ Sì, esci", use_container_width=True)
-                    with colB:
-                        no_stay = st.button("❌ No, resto", use_container_width=True)
-    
-                # ⚙️ Azioni
-                if yes_logout:
-                    logout_time = datetime.datetime.now()
-                    session_start = st.session_state.get("login_start_time")
-                    if session_start:
-                        duration_min = (logout_time - session_start).total_seconds() / 60.0
-                        conn = sqlite3.connect("login_log.db")
-                        cursor = conn.cursor()
+
+
+# --- PANNELLO UTENTE LOGGATO ---
+else:
+    col1, col2 = st.columns([4, 1])
+    with col1:
+        st.info(f"👤 Utente: **{st.session_state['username']}** | Ruolo: **{st.session_state['role']}**")
+
+    with col2:
+        if "confirm_logout" not in st.session_state:
+            st.session_state["confirm_logout"] = False
+
+        if not st.session_state["confirm_logout"]:
+            if st.button("🚪 Logout"):
+                st.session_state["confirm_logout"] = True
+                st.rerun()
+
+    # ✅ Se l’utente ha cliccato Logout → mostra "modale" centrale
+    if st.session_state["confirm_logout"]:
+        st.markdown(
+            """
+            <div style="
+                position: fixed;
+                top: 0; left: 0;
+                width: 100vw; height: 100vh;
+                background-color: rgba(0,0,0,0.4);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 9999;">
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        # ✅ Il "popup" vero e proprio (centrato con pulsanti cliccabili)
+        with st.container():
+            st.markdown(
+                """
+                <div style="
+                    background-color: white;
+                    border: 2px solid darkred;
+                    border-radius: 12px;
+                    padding: 30px;
+                    width: 400px;
+                    margin: 120px auto;
+                    text-align: center;
+                    box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+                    <h4 style="color: darkred;">⚠️ Conferma Logout</h4>
+                    <p style="font-size:16px;">Hai salvato il database prima di uscire?</p>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+            col1, col2, col3 = st.columns([1, 1, 1])
+            with col1:
+                esci = st.button("✅ Sì, esci", use_container_width=True)
+            with col3:
+                resta = st.button("❌ No, resto", use_container_width=True)
+
+            # ✅ Logica bottoni
+            if esci:
+                logout_time = datetime.datetime.now()
+                session_start = st.session_state.get("login_start_time")
+                if session_start:
+                    duration_min = (logout_time - session_start).total_seconds() / 60.0
+                    conn = sqlite3.connect("login_log.db")
+                    cursor = conn.cursor()
+                    cursor.execute("""
+                        SELECT id FROM login_log
+                        WHERE username = ? AND logout_time IS NULL
+                        ORDER BY login_time DESC
+                        LIMIT 1
+                    """, (st.session_state["username"],))
+                    row = cursor.fetchone()
+                    if row:
+                        last_id = row[0]
                         cursor.execute("""
-                            SELECT id FROM login_log
-                            WHERE username = ? AND logout_time IS NULL
-                            ORDER BY login_time DESC
-                            LIMIT 1
-                        """, (st.session_state["username"],))
-                        row = cursor.fetchone()
-                        if row:
-                            last_id = row[0]
-                            cursor.execute("""
-                                UPDATE login_log
-                                SET logout_time = ?, session_duration = ?
-                                WHERE id = ?
-                            """, (logout_time.isoformat(), duration_min, last_id))
-                        conn.commit()
-                        conn.close()
-    
-                    # 🔁 Reset sessione
-                    st.session_state.clear()
-                    st.rerun()
-    
-                elif no_stay:
-                    st.session_state["confirm_logout"] = False
-                    st.rerun()
+                            UPDATE login_log
+                            SET logout_time = ?, session_duration = ?
+                            WHERE id = ?
+                        """, (logout_time.isoformat(), duration_min, last_id))
+                    conn.commit()
+                    conn.close()
+
+                # 🔁 Reset sessione
+                st.session_state.clear()
+                st.rerun()
+
+            elif resta:
+                st.session_state["confirm_logout"] = False
+                st.rerun()
 
 
 
@@ -2439,6 +2449,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

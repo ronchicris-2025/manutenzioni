@@ -2333,15 +2333,15 @@ def show_impostazioni():
                 st.error("Conferma non valida. Assicurati di aver digitato 'RESET' esattamente.")
 
 # --- MAIN APPLICATION (CONTROLLER) ---
-
+# 🧪 Opzionale: test connessione GitHub
+    # test_github_connection()
 def main():
     # 🔁 Ripristina i database da GitHub solo se mancano in locale
-    restore_from_github_simple()
-
-    # 🧱 Inizializza i database (crea le tabelle se non esistono)
+    # Inizializza i database (crea le tabelle se non esistono)
     init_db()
     init_login_log()
-     --- 🚀 NUOVA GESTIONE DEL RIPRISTINO E MESSAGGI ---
+
+    # --- GESTIONE DEL RIPRISTINO E MESSAGGI ---
     # Esegui il controllo SOLO UNA VOLTA per sessione di login
     if "restore_report" not in st.session_state:
         st.session_state["restore_report"] = restore_from_github_simple()
@@ -2359,15 +2359,11 @@ def main():
             st.warning(warning)
     if report["restored"]:
         st.info(f"✅ Database ripristinati: {', '.join(report['restored'])}")
-    # --- FINE GESTIONE RIPRISTINO ---
 
     # 🔐 Gestione login
     check_login()
 
-    # 🧪 Opzionale: test connessione GitHub
-    # test_github_connection()
-    
-    # --- 🚀 BLOCCO MESSAGGI DI BENVENUTO (MIGLIORATO) ---
+    # --- BLOCCO MESSAGGI DI BENVENUTO (MIGLIORATO) ---
     # Questo blocco ora usa il report salvato nella sessione
     if st.session_state.get("logged_in", False) and not st.session_state.get("welcome_messages_shown", False):
         
@@ -2377,17 +2373,15 @@ def main():
                 st.toast(f"✅ {db_file} già presente in locale, nessun download necessario.")
         
         # Mostra il toast solo se non è successo ASSOLUTAMENTE NULLA
-        # (nessun ripristino, nessun file presente, nessun errore/warning)
         if not report["restored"] and not report["already_present"] and not report["errors"] and not report["warnings"]:
             st.toast("⚠️ Nessun database ripristinato (non trovati nel repo).")
 
         # Imposta il flag a True per non mostrare più questi toast in questa sessione
         st.session_state["welcome_messages_shown"] = True
-    # --- FINE DEL BLOCCO ---
+
 
     
-    
-#if st.session_state.get("logged_in", False):
+if st.session_state.get("logged_in", False):
     with st.sidebar:
         LOGO_PATH = "logo.png"
         if os.path.exists(LOGO_PATH):
@@ -2472,6 +2466,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

@@ -818,7 +818,7 @@ def show_gestione_manutenzioni():
             else:
                 st.info("Nessuna modifica da salvare.")
         # Pulsante per scaricare Excel
-        if st.button("📥 Scarica Excel tabella manutenzioni"):
+        if st.button("📥 Scarica Excel tabella PV"):
             output = io.BytesIO()
             df_to_export = df_manutenzioni.copy()
             with pd.ExcelWriter(output, engine='openpyxl') as writer:
@@ -2459,6 +2459,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

@@ -1168,18 +1168,18 @@ def create_pdf(dataframe):
 
 def complete_work_order(work_order_id):
     """
-    Sposta un ordine di lavoro in 'storico_prog', aggiorna 'ultimo_intervento' in 'manutenzioni',
-    e sincronizza 'note', 'referente_pv', 'telefono' in 'programmazione'.
+    Sposta un ordine di lavoro in 'storico_prog', aggiorna 'ultimo_intervento' e 'prossimo_intervento'
+    in 'manutenzioni', sincronizza anche 'note', 'referente_pv', 'telefono', 'attrezzature'.
     """
     try:
-        st.info("Inizio completamento dell'ordine...")
+        st.info("⏳ Inizio completamento dell'ordine...")
 
         conn = get_connection()
         cursor = conn.cursor()
 
         # --- 1️⃣ Recupera i dati dell'ordine dalla tabella attiva ---
         cursor.execute("""
-            SELECT punto_vendita, data_programmata, referente_pv, telefono, note 
+            SELECT punto_vendita, data_programmata, referente_pv, telefono, note, attrezzature 
             FROM programmazione 
             WHERE work_order_id = ?
         """, (work_order_id,))
@@ -1190,14 +1190,36 @@ def complete_work_order(work_order_id):
             conn.close()
             return
 
-        pv, data_prog, ref_pv, tel, note = order_data
+        pv, data_prog, ref_pv, tel, note, attrezzature = order_data
 
-        # --- 2️⃣ Aggiorna la tabella manutenzioni ---
+        # --- 2️⃣ Conversione sicura della data ---
+        data_ultimo_intervento = None
+        if data_prog:
+            try:
+                if isinstance(data_prog, str):
+                    data_ultimo_intervento = datetime.datetime.fromisoformat(data_prog).date()
+                elif isinstance(data_prog, datetime.datetime):
+                    data_ultimo_intervento = data_prog.date()
+                elif isinstance(data_prog, datetime.date):
+                    data_ultimo_intervento = data_prog
+            except Exception:
+                st.warning(f"⚠️ Data non valida per il punto vendita {pv}: {data_prog}")
+
+        # --- 3️⃣ Calcola il prossimo intervento (+10 mesi) ---
+        data_prossimo_intervento = None
+        if data_ultimo_intervento:
+            data_prossimo_intervento = data_ultimo_intervento + relativedelta(months=+10)
+
+        # --- 4️⃣ Aggiorna la tabella manutenzioni ---
         updates, params = [], []
 
-        if pd.notna(data_prog) and isinstance(data_prog, (datetime.date, datetime.datetime)):
+        if data_ultimo_intervento:
             updates.append("ultimo_intervento = ?")
-            params.append(data_prog)
+            params.append(data_ultimo_intervento)
+
+        if data_prossimo_intervento:
+            updates.append("prossimo_intervento = ?")
+            params.append(data_prossimo_intervento)
 
         if ref_pv:
             updates.append("referente_pv = ?")
@@ -1211,27 +1233,38 @@ def complete_work_order(work_order_id):
             updates.append("note = ?")
             params.append(note)
 
+        if attrezzature:
+            updates.append("attrezzature = ?")
+            params.append(attrezzature)
+
         if updates:
             params.append(pv)
             query = f"UPDATE manutenzioni SET {', '.join(updates)} WHERE punto_vendita = ?"
             cursor.execute(query, tuple(params))
-            st.success(f"Aggiornata tabella 'manutenzioni' per il punto vendita {pv}.")
+            st.success(f"✅ Aggiornata tabella 'manutenzioni' per il punto vendita **{pv}**.")
         else:
-            st.info("Nessun campo da aggiornare in manutenzioni.")
+            st.info("ℹ️ Nessun campo da aggiornare in 'manutenzioni'.")
 
-        # --- 3️⃣ Sposta l’ordine nello storico ---
-        cursor.execute("SELECT COUNT(*) FROM programmazione WHERE work_order_id = ?", (work_order_id,))
-        count_before_delete = cursor.fetchone()[0]
-        st.write(f"DEBUG: trovati {count_before_delete} record in 'programmazione' da spostare.")
-
+        # --- 5️⃣ Controllo anti-duplicato nello storico ---
         cursor.execute("""
-            INSERT INTO storico_prog
-            SELECT * FROM programmazione WHERE work_order_id = ?
+            SELECT COUNT(*) FROM storico_prog WHERE work_order_id = ?
         """, (work_order_id,))
-        st.write(f"DEBUG: Inserito {cursor.rowcount} record in 'storico_prog'.")
+        already_in_storico = cursor.fetchone()[0] > 0
 
-        cursor.execute("DELETE FROM programmazione WHERE work_order_id = ?", (work_order_id,))
-        st.write(f"DEBUG: Cancellato {cursor.rowcount} record da 'programmazione'.")
+        if already_in_storico:
+            st.warning(f"⚠️ L'ordine {work_order_id} è già presente nello storico. Nessuno spostamento eseguito.")
+        else:
+            # Sposta l’ordine nello storico
+            cursor.execute("""
+                INSERT INTO storico_prog
+                SELECT * FROM programmazione WHERE work_order_id = ?
+            """, (work_order_id,))
+            inserted = cursor.rowcount
+
+            cursor.execute("DELETE FROM programmazione WHERE work_order_id = ?", (work_order_id,))
+            deleted = cursor.rowcount
+
+            st.toast(f"📦 Spostati {inserted} record nello storico, eliminati {deleted} da programmazione", icon="📁")
 
         conn.commit()
         conn.close()
@@ -1246,8 +1279,10 @@ def complete_work_order(work_order_id):
             conn.rollback()
         except:
             pass
-        if conn:
-            conn.close()
+        finally:
+            if conn:
+                conn.close()
+
 
                 
 ## PAGINA MAPPA INTERATTIVA
@@ -2459,6 +2494,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

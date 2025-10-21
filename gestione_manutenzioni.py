@@ -1166,10 +1166,17 @@ def create_pdf(dataframe):
  ## FUNZIONE DI COMPLETAMENTO DEL WORK ORDER CONFERMA ATTIVITA MANUTENZIONE SVOLTE
    
 
+import datetime
+import pandas as pd
+import streamlit as st
+from dateutil.relativedelta import relativedelta
+
 def complete_work_order(work_order_id):
     """
-    Sposta un ordine di lavoro in 'storico_prog', aggiorna 'ultimo_intervento' e 'prossimo_intervento'
-    in 'manutenzioni', sincronizza anche 'note', 'referente_pv', 'telefono', 'attrezzature'.
+    Sposta tutti i record di un work_order da 'programmazione' -> 'storico_prog',
+    e per ogni punto vendita aggiorna i campi in 'manutenzioni' (ultimo_intervento,
+    prossimo_intervento = ultimo + 10 mesi, attrezzature, referente_pv, telefono, note).
+    Evita duplicati nello storico controllando work_order_id + punto_vendita.
     """
     try:
         st.info("⏳ Inizio completamento dell'ordine...")
@@ -1177,99 +1184,121 @@ def complete_work_order(work_order_id):
         conn = get_connection()
         cursor = conn.cursor()
 
-        # --- 1️⃣ Recupera i dati dell'ordine dalla tabella attiva ---
-        cursor.execute("""
-            SELECT punto_vendita, data_programmata, referente_pv, telefono, note, attrezzature 
-            FROM programmazione 
-            WHERE work_order_id = ?
-        """, (work_order_id,))
-        order_data = cursor.fetchone()
+        # --- PRELEVA TUTTE LE RIGHE DEL WORK_ORDER ---
+        cursor.execute("SELECT * FROM programmazione WHERE work_order_id = ?", (work_order_id,))
+        rows = cursor.fetchall()
 
-        if not order_data:
+        if not rows:
             st.warning(f"Nessun ordine trovato per ID {work_order_id}.")
             conn.close()
             return
 
-        pv, data_prog, ref_pv, tel, note, attrezzature = order_data
+        # Recupera i nomi delle colonne della tabella programmazione (per inserimento in storico)
+        pragma = cursor.execute("PRAGMA table_info(programmazione)").fetchall()
+        prog_cols = [c[1] for c in pragma]  # lista di nomi colonne
 
-        # --- 2️⃣ Conversione sicura della data ---
-        data_ultimo_intervento = None
-        if data_prog:
-            try:
-                if isinstance(data_prog, str):
-                    data_ultimo_intervento = datetime.datetime.fromisoformat(data_prog).date()
-                elif isinstance(data_prog, datetime.datetime):
-                    data_ultimo_intervento = data_prog.date()
-                elif isinstance(data_prog, datetime.date):
-                    data_ultimo_intervento = data_prog
-            except Exception:
-                st.warning(f"⚠️ Data non valida per il punto vendita {pv}: {data_prog}")
+        # Indici utili (se non esistono verrà sollevato KeyError, che catturiamo)
+        try:
+            idx_pv = prog_cols.index("punto_vendita")
+            idx_data = prog_cols.index("data_programmata")
+            # campi opzionali
+            idx_ref = prog_cols.index("referente_pv") if "referente_pv" in prog_cols else None
+            idx_tel = prog_cols.index("telefono") if "telefono" in prog_cols else None
+            idx_note = prog_cols.index("note") if "note" in prog_cols else None
+            idx_att = prog_cols.index("attrezzature") if "attrezzature" in prog_cols else None
+        except ValueError as ve:
+            st.error(f"Struttura tabella 'programmazione' inattesa: {ve}")
+            conn.close()
+            return
 
-        # --- 3️⃣ Calcola il prossimo intervento (+10 mesi) ---
-        data_prossimo_intervento = None
-        if data_ultimo_intervento:
-            data_prossimo_intervento = data_ultimo_intervento + relativedelta(months=+10)
+        updated_count = 0
+        inserted_in_storico = 0
 
-        # --- 4️⃣ Aggiorna la tabella manutenzioni ---
-        updates, params = [], []
+        # --- PER OGNI RIGA: aggiorna manutenzioni ---
+        for row in rows:
+            pv = row[idx_pv]
+            data_prog = row[idx_data]
+            ref_pv = row[idx_ref] if idx_ref is not None else None
+            tel = row[idx_tel] if idx_tel is not None else None
+            note = row[idx_note] if idx_note is not None else None
+            attrezzature = row[idx_att] if idx_att is not None else None
 
-        if data_ultimo_intervento:
-            updates.append("ultimo_intervento = ?")
-            params.append(data_ultimo_intervento)
+            # Conversione sicura data_programmata -> date
+            data_ultimo_intervento = None
+            if data_prog:
+                try:
+                    if isinstance(data_prog, str):
+                        # try isoformat first, fallback: pandas
+                        try:
+                            data_ultimo_intervento = datetime.datetime.fromisoformat(data_prog).date()
+                        except Exception:
+                            data_ultimo_intervento = pd.to_datetime(data_prog, errors="coerce").date()
+                    elif isinstance(data_prog, datetime.datetime):
+                        data_ultimo_intervento = data_prog.date()
+                    elif isinstance(data_prog, datetime.date):
+                        data_ultimo_intervento = data_prog
+                except Exception:
+                    st.warning(f"⚠️ Data non valida per PV '{pv}': {data_prog}")
 
-        if data_prossimo_intervento:
-            updates.append("prossimo_intervento = ?")
-            params.append(data_prossimo_intervento)
+            # Calcola prossimo intervento (+10 mesi)
+            data_prossimo_intervento = None
+            if data_ultimo_intervento:
+                data_prossimo_intervento = data_ultimo_intervento + relativedelta(months=+10)
 
-        if ref_pv:
-            updates.append("referente_pv = ?")
-            params.append(ref_pv)
+            # Prepara update dinamico per manutenzioni
+            updates = []
+            params = []
 
-        if tel:
-            updates.append("telefono = ?")
-            params.append(tel)
+            if data_ultimo_intervento:
+                updates.append("ultimo_intervento = ?")
+                params.append(data_ultimo_intervento)
+            if data_prossimo_intervento:
+                updates.append("prossimo_intervento = ?")
+                params.append(data_prossimo_intervento)
+            if ref_pv:
+                updates.append("referente_pv = ?")
+                params.append(ref_pv)
+            if tel:
+                updates.append("telefono = ?")
+                params.append(tel)
+            if note:
+                updates.append("note = ?")
+                params.append(note)
+            if attrezzature:
+                updates.append("attrezzature = ?")
+                params.append(attrezzature)
 
-        if note:
-            updates.append("note = ?")
-            params.append(note)
+            if updates:
+                params.append(pv)
+                query = f"UPDATE manutenzioni SET {', '.join(updates)} WHERE punto_vendita = ?"
+                cursor.execute(query, tuple(params))
+                updated_count += 1
 
-        if attrezzature:
-            updates.append("attrezzature = ?")
-            params.append(attrezzature)
+        # --- INSERIMENTO nello storico: riga-per-riga controllando duplicati ---
+        # Costruisco query di insert dinamica usando i nomi colonne presi da programmazione
+        placeholders = ", ".join(["?"] * len(prog_cols))
+        cols_sql = ", ".join(prog_cols)
+        insert_sql = f"INSERT INTO storico_prog ({cols_sql}) VALUES ({placeholders})"
 
-        if updates:
-            params.append(pv)
-            query = f"UPDATE manutenzioni SET {', '.join(updates)} WHERE punto_vendita = ?"
-            cursor.execute(query, tuple(params))
-            st.success(f"✅ Aggiornata tabella 'manutenzioni' per il punto vendita **{pv}**.")
-        else:
-            st.info("ℹ️ Nessun campo da aggiornare in 'manutenzioni'.")
+        for row in rows:
+            pv = row[idx_pv]
+            # controllo duplicato sul binomio work_order_id + punto_vendita
+            cursor.execute("SELECT COUNT(*) FROM storico_prog WHERE work_order_id = ? AND punto_vendita = ?", (work_order_id, pv))
+            if cursor.fetchone()[0] == 0:
+                cursor.execute(insert_sql, tuple(row))
+                inserted_in_storico += 1
+            else:
+                st.write(f"DEBUG: record work_order_id={work_order_id} punto_vendita='{pv}' già presente nello storico; salto insert.")
 
-        # --- 5️⃣ Controllo anti-duplicato nello storico ---
-        cursor.execute("""
-            SELECT COUNT(*) FROM storico_prog WHERE work_order_id = ?
-        """, (work_order_id,))
-        already_in_storico = cursor.fetchone()[0] > 0
-
-        if already_in_storico:
-            st.warning(f"⚠️ L'ordine {work_order_id} è già presente nello storico. Nessuno spostamento eseguito.")
-        else:
-            # Sposta l’ordine nello storico
-            cursor.execute("""
-                INSERT INTO storico_prog
-                SELECT * FROM programmazione WHERE work_order_id = ?
-            """, (work_order_id,))
-            inserted = cursor.rowcount
-
-            cursor.execute("DELETE FROM programmazione WHERE work_order_id = ?", (work_order_id,))
-            deleted = cursor.rowcount
-
-            st.toast(f"📦 Spostati {inserted} record nello storico, eliminati {deleted} da programmazione", icon="📁")
+        # --- ELIMINA tutte le righe in programmazione per quel work_order_id ---
+        cursor.execute("DELETE FROM programmazione WHERE work_order_id = ?", (work_order_id,))
+        deleted = cursor.rowcount
 
         conn.commit()
         conn.close()
 
-        st.success(f"✅ Ordine {work_order_id} completato e spostato nello storico!")
+        st.success(f"✅ Aggiornati {updated_count} record in 'manutenzioni'.")
+        st.success(f"✅ Inseriti {inserted_in_storico} record in 'storico_prog' e cancellati {deleted} da 'programmazione'.")
         st.balloons()
         st.rerun()
 
@@ -1280,7 +1309,7 @@ def complete_work_order(work_order_id):
         except:
             pass
         finally:
-            if conn:
+            if 'conn' in locals() and conn:
                 conn.close()
 
 
@@ -2494,6 +2523,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

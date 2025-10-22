@@ -1116,6 +1116,7 @@ def create_pdf(dataframe):
     # Larghezze per le due tabelle (devono essere coerenti)
     widths_line1 = [65*mm, 30*mm, 25*mm, 50*mm, 30*mm]
     widths_line2 = [35*mm, 75*mm, 50*mm, 20*mm, 20*mm]
+    widths_line3 = [200*mm]
     
     # Stile comune per entrambe le tabelle
     style = TableStyle([
@@ -1125,7 +1126,7 @@ def create_pdf(dataframe):
         ('VALIGN', (0, 1), (-1, -1), 'TOP'), ('GRID', (0, 0), (-1, -1), 1, colors.black),
     ])
 
-    # --- 4. CICLO DI STAMPA CON DUE TABELLE ---
+    # --- 4. CICLO DI STAMPA CON 3 TABELLE ---
     for index, row in dataframe.iterrows():
         # --- Prima Riga ---
         data_line1 = [headers_line1]
@@ -1152,6 +1153,15 @@ def create_pdf(dataframe):
         table2 = Table(data_line2, colWidths=widths_line2)
         table2.setStyle(style)
         elements.append(table2)
+
+        # --- Terza Riga ---
+        data_line3 = [headers_line3]
+        data_line3.append([
+            row.get('note', '')
+        ])
+        table3 = Table(data_line3, colWidths=widths_line3)
+        table3.setStyle(style)
+        elements.append(table3)
         
         # Spazio tra i record
         elements.append(Spacer(1, 3*mm))
@@ -2523,6 +2533,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

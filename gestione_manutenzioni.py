@@ -1112,6 +1112,7 @@ def create_pdf(dataframe):
     # --- 3. DATI E STILI ---
     headers_line1 = ['Punto Vendita', 'Data', 'Orario', 'Referente', 'Telefono']
     headers_line2 = ['Attrezzature', 'Indirizzo', 'Città', 'CAP', 'Provincia']
+    headers_line3 = ['Note']
     
     # Larghezze per le due tabelle (devono essere coerenti)
     widths_line1 = [65*mm, 30*mm, 25*mm, 50*mm, 30*mm]
@@ -2533,6 +2534,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
